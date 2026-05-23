@@ -12,8 +12,8 @@
       - [x] Look up nearest tag (respecting `GIT_PROMPT_DISABLE_TAGS`)
       - [x] Emit `\033[;32m(branch[tag][sync])\033[0m`
       - [x] Exit silently outside a git repo
-- [x] **T3** — Add `Makefile` with `build`, `build-all`, `clean` targets
-      for linux/amd64, linux/arm64, windows/arm64.
+- [x] **T3** — Add `Makefile` with `build`, `build-all`, `update-deps`,
+      `clean` targets for linux/amd64, linux/arm64, windows/arm64.
 - [x] **T4** — Add `build.sh` (POSIX `/bin/sh`) with the same targets, for
       Windows BusyBox ash where GNU make is unavailable. Use `go env GOEXE`
       to resolve the native binary suffix.

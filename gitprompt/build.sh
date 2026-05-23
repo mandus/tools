@@ -36,8 +36,12 @@ case "$cmd" in
               "$OUTDIR/gitprompt-linux-arm64" \
               "$OUTDIR/gitprompt-windows-arm64.exe"
         ;;
+    update-deps)
+        go get -u ./...
+        go mod tidy
+        ;;
     *)
-        echo "Usage: $0 [build|build-all|clean]" >&2
+        echo "Usage: $0 [build|build-all|update-deps|clean]" >&2
         exit 1
         ;;
 esac

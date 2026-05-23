@@ -10,6 +10,10 @@ build-all:
 	GOOS=linux  GOARCH=arm64 go build -ldflags="-s -w" -o $(OUTDIR)/gitprompt-linux-arm64 .
 	GOOS=windows GOARCH=arm64 go build -ldflags="-s -w" -o $(OUTDIR)/gitprompt-windows-arm64.exe .
 
+update-deps:
+	go get -u ./...
+	go mod tidy
+
 clean:
 	rm -f $(OUTDIR)/gitprompt \
 	      $(OUTDIR)/gitprompt-linux-amd64 \
