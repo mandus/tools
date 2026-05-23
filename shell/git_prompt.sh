@@ -13,7 +13,10 @@
 #   eval "$(zoxide init posix --hook prompt)"
 #
 # Build the Go binary (requires Go 1.25+):
-#   cd gitprompt && make build   # outputs to shell/gitprompt
+#   cd gitprompt && make build        # GNU make
+#   cd gitprompt && ./build.sh build  # POSIX sh (no make needed; works
+#                                     # on Windows BusyBox ash)
+# Both produce shell/gitprompt (or shell/gitprompt.exe on Windows).
 # Ensure tools/shell/ is on your PATH so the binary is found.
 
 # Detect the Go binary once at source time to avoid per-prompt overhead.
