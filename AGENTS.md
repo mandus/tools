@@ -16,6 +16,56 @@ All branches must follow: `<type>/<number>-<short-slug>`
 - Include the issue/PR number immediately after the prefix.
 - Use kebab-case for slugs; keep them short and identifiable.
 
+## Commit Messages
+
+Every commit message must start with a [gitmoji](https://gitmoji.dev/) that
+matches the nature of the change, followed by a concise subject line written
+in the imperative mood.
+
+**Format:**
+```
+<emoji> <subject>
+
+<body — optional, explains why not what>
+```
+
+**Example:**
+```
+✨ Add gitprompt binary for fast shell prompt
+
+Reads .git/ internals directly to eliminate git subprocess overhead
+on Windows/WSL where process creation costs 50–150 ms per prompt.
+```
+
+**Common gitmojis for this repo:**
+
+| Emoji | When to use |
+|-------|-------------|
+| ✨ | Introduce a new feature |
+| 🐛 | Fix a bug |
+| 🩹 | Simple fix for a non-critical issue |
+| 🚑️ | Critical hotfix |
+| ♻️ | Refactor code without changing behaviour |
+| ⚡️ | Improve performance |
+| 🔥 | Remove code or files |
+| 📝 | Add or update documentation |
+| ✅ | Add, update, or pass tests |
+| ⬆️ | Upgrade dependencies |
+| ⬇️ | Downgrade dependencies |
+| 📌 | Pin dependencies to specific versions |
+| 🔧 | Add or update configuration files |
+| 🔨 | Add or update build/dev scripts |
+| 🏗️ | Make architectural changes |
+| 💥 | Introduce breaking changes |
+| ⏪️ | Revert changes |
+| 🙈 | Add or update .gitignore |
+| 👷 | Add or update CI/CD pipeline |
+| 💚 | Fix CI build |
+| 🚚 | Move or rename files/paths |
+| 🎉 | Begin a project |
+
+Full reference: <https://gitmoji.dev/>
+
 ## Spec-Driven Development
 
 Follow spec-driven development practices: write or consult a spec before implementing. Prefer small, focused changes over large sweeping refactors.
