@@ -1,17 +1,38 @@
 # Git branch prompt for BusyBox ash (POSIX sh compatible)
 # Requires: git >= 2.13 (for --porcelain=v2)
 #
-# Performance: 1 git call (tags disabled) or 2 git calls (tags enabled).
-# Previous version used 5 git subprocess calls per prompt.
+# Performance: delegates to the gitprompt Go binary when available (zero
+# git subprocesses — reads .git/ directly).  Falls back to 1-2 git calls.
 #
 # Environment variables:
-#   GIT_PROMPT_DISABLE_TAGS=1  — skip tag lookup (saves one git fork)
+#   GIT_PROMPT_DISABLE_TAGS=1  — skip tag lookup
+#   GIT_PROMPT_BIN             — override path to the gitprompt binary
 #
 # Source this file in your ~/.profile, BEFORE zoxide init:
 #   . /path/to/git_prompt.sh
 #   eval "$(zoxide init posix --hook prompt)"
+#
+# Build the Go binary (requires Go 1.25+):
+#   cd gitprompt && make build        # GNU make
+#   cd gitprompt && ./build.sh build  # POSIX sh (no make needed; works
+#                                     # on Windows BusyBox ash)
+# Both produce shell/gitprompt (or shell/gitprompt.exe on Windows).
+# Ensure tools/shell/ is on your PATH so the binary is found.
+
+# Detect the Go binary once at source time to avoid per-prompt overhead.
+if [ -z "${GIT_PROMPT_BIN+x}" ]; then
+    if command -v gitprompt > /dev/null 2>&1; then
+        GIT_PROMPT_BIN=$(command -v gitprompt)
+    else
+        GIT_PROMPT_BIN=
+    fi
+fi
 
 __git_branch() {
+    if [ -n "$GIT_PROMPT_BIN" ]; then
+        "$GIT_PROMPT_BIN"
+        return
+    fi
     _gp_status=$(git status --porcelain=v2 --branch 2>/dev/null) || return
     _gp_branch=
     _gp_tag=
