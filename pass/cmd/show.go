@@ -31,22 +31,44 @@ func addShowCmd() {
 func showPassword(path string) error {
 	storeDir := GetPasswordStoreDir()
 	
-	// Normalize path: replace / with OS separator, add .gpg extension
-	filePath := filesystem.NormalizePath(path)
-	if !strings.HasSuffix(filePath, ".gpg") {
-		filePath += ".gpg"
+	// Normalize the input path: strip .gpg if present, ensure forward slashes
+	filePath := strings.ReplaceAll(path, "\\", "/")
+	if strings.HasSuffix(filePath, ".gpg") {
+		filePath = strings.TrimSuffix(filePath, ".gpg")
 	}
-	fullPath := filepath.Join(storeDir, filePath)
+	filePath += ".gpg"
+	
+	// Construct full path - try multiple strategies for cross-platform compatibility
+	// Strategy 1: Use filepath.Join with FromSlash (handles path separator conversion)
+	fullPath := filepath.Join(storeDir, filepath.FromSlash(filePath))
 	
 	// Check if file exists
-	if _, err := os.Stat(fullPath); os.IsNotExist(err) {
-		return fmt.Errorf("pass: %s: No such file or directory", path)
+	if _, err := os.Stat(fullPath); err == nil {
+		return decryptAndDisplay(fullPath, path)
 	}
 	
+	// Strategy 2: Try with forward slashes directly (for Unix-like environments on Windows)
+	fullPath = storeDir + "/" + filePath
+	if _, err := os.Stat(fullPath); err == nil {
+		return decryptAndDisplay(fullPath, path)
+	}
+	
+	// Strategy 3: Try storeDir with forward slashes + path
+	storeDirForward := strings.ReplaceAll(storeDir, "\\", "/")
+	fullPath = storeDirForward + "/" + filePath
+	if _, err := os.Stat(fullPath); err == nil {
+		return decryptAndDisplay(fullPath, path)
+	}
+	
+	return fmt.Errorf("pass: %s: No such file or directory", path)
+}
+
+// decryptAndDisplay handles the decryption and output
+func decryptAndDisplay(fullPath, displayPath string) error {
 	// Decrypt the file
 	password, err := gpg.DecryptFile(fullPath)
 	if err != nil {
-		return fmt.Errorf("pass: GPG decryption failed: %v", err)
+		return err // err already has proper prefix from gpg package
 	}
 	
 	// Output based on flags
@@ -55,7 +77,7 @@ func showPassword(path string) error {
 		if err := filesystem.CopyToClipboard(password); err != nil {
 			return fmt.Errorf("pass: failed to copy to clipboard: %v", err)
 		}
-		fmt.Printf("Copied %s to clipboard.\n", path)
+		fmt.Printf("Copied %s to clipboard.\n", displayPath)
 		// Start auto-clear timer in background
 		go filesystem.StartClipboardClearTimer()
 	} else {

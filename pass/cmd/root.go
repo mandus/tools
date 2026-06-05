@@ -10,15 +10,18 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "pass",
+	Use:   "pass [path]",
 	Short: "A Windows-compatible password store manager",
 	Long: `pass - A Windows-compatible replacement for the Unix password-store tool.
 
 pass stores passwords as GPG-encrypted files in ~/.password-store/
 and integrates with git for version control.
 
+If called with a path argument and no command, it shows the password (same as 'pass show').
+
 Usage:
   pass [command] [options] [path]
+  pass [options] <path>              # Show password (default command)
 
 Examples:
   pass insert email/gmail.com/user    Insert a new password
@@ -26,15 +29,18 @@ Examples:
   pass -c email/gmail.com/user       Copy password to clipboard
   pass ls                            List all passwords
   pass find gmail                    Search for passwords`,
-	Args: cobra.NoArgs,
+	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// If no command and no args, show help
+		// If no args and no command flags, show help
 		if len(args) == 0 {
+			// Check if any flags were set
+			if cmd.Flags().Changed("help") || cmd.Flags().Changed("version") || cmd.Flags().Changed("clip") {
+				return nil // Let cobra handle these flags
+			}
 			return cmd.Help()
 		}
-		// If args provided without command, treat as show command
-		// This will be handled by the show command registration
-		return nil
+		// If args provided without explicit command, treat as show command
+		return showPassword(args[0])
 	},
 }
 

@@ -27,9 +27,9 @@ var lsCmd = &cobra.Command{
 
 // Flags for ls command
 var (
-	recursiveFlag  bool
-	dirsOnlyFlag   bool
-	filesOnlyFlag  bool
+	recursiveFlag bool
+	dirsOnlyFlag  bool
+	filesOnlyFlag bool
 )
 
 func addLsCmd() {
@@ -85,7 +85,7 @@ func listPasswords(subpath string) error {
 			return err
 		}
 		
-		// Normalize path separators
+		// Normalize path separators for display
 		relPath = filesystem.NormalizePathForDisplay(relPath)
 		
 		// Skip the base path itself
@@ -97,7 +97,6 @@ func listPasswords(subpath string) error {
 		if info.IsDir() {
 			if !filesOnlyFlag {
 				// For recursive listing, we want full paths
-				// For non-recursive, we want just the directory name
 				if recursiveFlag {
 					results = append(results, relPath)
 				} else if subpath == "" {
