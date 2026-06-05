@@ -36,7 +36,7 @@ The Unix `pass` tool:
 ### Nice to Have (Future)
 - [ ] `pass edit <path>` - Edit password in editor
 - [ ] `pass generate <path> [length]` - Generate random password
-- [ ] `pass rm <path>` - Remove password
+- [x] `pass rm <path>` - Remove password
 - [ ] `pass mv <old> <new>` - Move/rename password
 - [ ] `pass git <args>` - Pass-through git commands
 - [ ] Tree display with `pass tree`
@@ -117,7 +117,7 @@ pass [OPTIONS] COMMAND [ARGS...]
 -c, --clip[board]
     Copy the password to the clipboard instead of printing to stdout.
     Type: Boolean flag
-    Applies to: show command
+    Applies to: show command, rm command
     
 -v, --verbose
     Show verbose output for debugging.
@@ -131,6 +131,11 @@ pass [OPTIONS] COMMAND [ARGS...]
 --help, -h
     Display help information and exit.
     Type: Boolean flag
+    
+-i, --interactive
+    Force interactive fuzzy search mode (same as running `pass` without args).
+    Type: Boolean flag
+    Applies to: All commands
 ```
 
 ### 2.2 Command: insert
@@ -348,6 +353,167 @@ email/gmail.com/work@gmail.com
 
 ---
 
+### 2.6 Command: rm
+
+**Synopsis**:
+```
+pass rm [OPTIONS] [<path>]
+```
+
+**Description**: Remove a password from the store. If path is provided, removes that specific password. If no path is provided, enters interactive fuzzy search mode where the user can select a password to remove.
+
+**Arguments**:
+- `<path>`: The path of the password to remove
+  - Type: String, optional
+  - Can omit `.gpg` extension (automatically appended if not present)
+  - Must be a valid path to an existing `.gpg` file
+
+**Options**:
+- `-n, --no-commit`: Skip git commit after removal
+- `-f, --force`: Alias for --no-commit
+- `-c, --clip[board]`: Copy password to clipboard before deleting
+
+**Behavior**:
+
+**With explicit path:**
+1. Validate path is not empty
+2. Construct file path (add `.gpg` if not present)
+3. Check if file exists
+   - If not, display error `pass: <path>: No such file or directory` and exit with code 1
+4. If `-c` flag is set:
+   - Decrypt the file and copy password to clipboard
+   - Start clipboard clear timer (if enabled)
+5. Remove the file with `os.Remove()`
+6. If git repo exists and `--no-commit` not specified:
+   - Run `git rm <path>.gpg`
+   - Run `git commit -m "Remove <path>"`
+   - If git commands fail, display warning but continue (non-fatal)
+7. Display: "Password removed successfully."
+8. Exit with code 0
+
+**Without explicit path (fuzzy search mode):**
+1. Enter interactive fuzzy search mode
+2. As user types, filter list of passwords using fuzzy matching
+3. Display matching passwords with best match selected
+4. User navigates with arrow keys, types to filter
+5. When user presses Enter on a selection:
+   - If `-c` flag: decrypt and copy to clipboard first
+   - Remove the selected password file
+   - If git repo exists and not `--no-commit`: commit removal
+   - Display success message
+   - Exit fuzzy search mode
+6. If user presses Esc/Ctrl+C: exit without action, exit with code 0
+
+**Exit Codes**:
+- 0: Success
+- 1: File not found
+- 2: Permission denied
+- 3: Git operation failed (non-fatal, file still removed)
+
+**Examples**:
+```bash
+# Remove specific password
+pass rm email/gmail.com/oldaccount
+
+# Remove with fuzzy search
+pass rm
+# User types: gmail
+# Selects: email/gmail.com/oldaccount
+# Press Enter to delete
+
+# Remove without git commit
+pass rm --no-commit social/twitter.com/old
+
+# Remove and copy to clipboard first
+pass rm -c banking/chase.com/oldcard
+```
+
+---
+
+### 2.7 Interactive Fuzzy Search Mode
+
+**Synopsis**:
+```
+pass
+pass --interactive
+pass -i
+```
+
+**Description**: When invoked without any arguments or with the `--interactive` flag, `pass` enters an interactive fuzzy search mode. This allows users to quickly find and select secrets by typing partial matches, similar to the fzf tool.
+
+**Fuzzy Matching**:
+- Characters in the query must appear in the target path in the same order (subsequence match)
+- Characters do NOT need to be consecutive
+- Matching is case-insensitive
+- Example: Query `twt` matches `social/twitter.com/admin` (t-w-t in order)
+
+**Display**:
+```
+Passwords:
+  email/gmail.com/user
+> social/twitter.com/admin
+  bank/chase.com/account
+  
+Search: tw
+```
+
+**Components**:
+- **Header**: "Passwords:" label
+- **List**: Scrollable list of matching passwords
+- **Cursor**: `>` prefix indicates currently selected item
+- **Prompt**: "Search: " at bottom with user's query
+- **Matching characters**: Visually distinguished (highlighted if terminal supports it)
+
+**Action on Selection**:
+The action taken when Enter is pressed depends on how fuzzy search was invoked:
+
+| Invocation | Action |
+|------------|--------|
+| `pass` or `pass -i` | Show the selected password (to stdout) |
+| `pass -c` or `pass --clip` | Copy selected password to clipboard |
+| `pass rm` | Delete the selected password file |
+| `pass rm -c` | Copy to clipboard, then delete |
+
+**Keybindings**:
+
+| Key | Action |
+|-----|--------|
+| Any printable character | Add to query, re-filter list |
+| Backspace | Remove last character from query |
+| Delete | Remove character under cursor from query |
+| Ctrl+A | Move cursor to start of query |
+| Ctrl+E | Move cursor to end of query |
+| Ctrl+K | Delete from cursor to end of query |
+| Ctrl+L | Clear entire query |
+| Ctrl+W | Delete word before cursor |
+| ↑ (Up Arrow) | Move selection up by 1 |
+| ↓ (Down Arrow) | Move selection down by 1 |
+| Page Up | Move selection up by page height |
+| Page Down | Move selection down by page height |
+| Home | Move to first item |
+| End | Move to last item |
+| Enter | Select current item (perform action based on invocation) |
+| Esc | Exit fuzzy search mode, return to shell |
+| Ctrl+C | Exit fuzzy search mode, return to shell |
+| Ctrl+D | Exit fuzzy search mode (EOF), return to shell |
+| Tab | Toggle between search input and list navigation |
+| ← (Left Arrow) | Move cursor left in query |
+| → (Right Arrow) | Move cursor right in query |
+
+**Filtering Behavior**:
+- **Empty query**: Show all passwords
+- **No matches**: Show "No matches found" message
+- **Git ignore**: Only show `.gpg` files that would be tracked by git (exclude `.git/` directory)
+- **File types**: Only show `.gpg` files
+- **Sorting**: Best matches first (by score), then alphabetically
+
+**Exit Codes**:
+- 0: Success (selected and performed action, or exited normally)
+- 1: Error occurred
+- 2: No terminal available (when piped)
+
+---
+
 ## 3. File Operations
 
 ### 3.1 File Naming
@@ -522,6 +688,8 @@ email/gmail.com/work@gmail.com
 | 4 | Git operation failed (non-fatal for insert) |
 | 5 | Clipboard operation failed |
 | 6 | Password verification failed (mismatch or empty) |
+| 7 | Remove operation failed |
+| 8 | Fuzzy search error (no terminal, etc.) |
 
 ### 7.3 Verbose Mode
 
@@ -545,6 +713,8 @@ email/gmail.com/work@gmail.com
 | `PASS_GIT_EMAIL` | Git user.email | System git config |
 | `PASS_CLIPBOARD_TIMEOUT` | Clipboard clear timeout (seconds) | 45 |
 | `PASS_CLIPBOARD_CLEAR` | Enable clipboard auto-clear | true |
+| `PASS_NO_COLOR` | Disable ANSI color codes in fuzzy search | false |
+| `PASS_FUZZY_TIMEOUT` | Timeout for fuzzy search (seconds, 0=none) | 0 |
 
 ---
 
@@ -584,6 +754,8 @@ pass/                 # Main package
 │   ├── show.go        # Show command implementation
 │   ├── ls.go          # List command implementation
 │   ├── find.go        # Find command implementation
+│   ├── rm.go          # Remove command implementation
+│   ├── fuzzy.go       # Fuzzy search command and UI
 │   └── root.go        # Root command and global flags
 ├── pkg/
 │   ├── gpg/
@@ -594,8 +766,12 @@ pass/                 # Main package
 │   │   └── clipboard.go # Clipboard functions
 │   ├── filesystem/
 │   │   └── fs.go       # Filesystem utilities
-│   └── config/
-│       └── config.go   # Configuration management
+│   ├── config/
+│   │   └── config.go   # Configuration management
+│   ├── fuzzy/
+│   │   └── fuzzy.go    # Fuzzy matching algorithm
+│   └── terminal/
+│       └── terminal.go # Terminal UI utilities
 ├── internal/
 │   └── utils/
 │       └── helpers.go  # Internal utility functions
@@ -607,6 +783,7 @@ tests/
 └── find_test.go       # Tests for find command
 docs/
   pass-replacement-spec.md  # This document
+  pass-quick-reference.md  # Quick reference guide
   usage.md                 # User documentation
 ```
 

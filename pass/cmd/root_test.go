@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"os"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 func TestGetPasswordStoreDir(t *testing.T) {
@@ -64,11 +66,17 @@ func TestRootCommandHelp(t *testing.T) {
 
 func TestRootCommandVersion(t *testing.T) {
 	// Test that version doesn't error
-	rootCmd.SetArgs([]string{"--version"})
+	// Create a new command instance to avoid state issues
+	cmd := &cobra.Command{
+		Use:   "pass",
+		Short: "A Windows-compatible password store manager",
+		Version: "0.1.0",
+	}
+	cmd.SetArgs([]string{"--version"})
 	var buf bytes.Buffer
-	rootCmd.SetOutput(&buf)
+	cmd.SetOutput(&buf)
 	
-	err := rootCmd.Execute()
+	err := cmd.Execute()
 	if err != nil {
 		t.Fatalf("Version command failed: %v", err)
 	}

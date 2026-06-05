@@ -248,6 +248,167 @@ This document tracks design decisions made during the specification and implemen
 
 ---
 
+### [AD-007] Fuzzy Search as Default Command
+
+**Status**: Accepted  
+**Date**: 2026-06-05  
+**Context**: What should happen when `pass` is invoked without any arguments?
+
+**Decision**: Enter interactive fuzzy search mode. This allows users to quickly find and select secrets without needing to remember exact paths.
+
+**Rationale**:
+- Most common use case is retrieving a password
+- Fuzzy search provides the fastest way to find what you need
+- Matches user's expectation from the requirement
+- Similar to how fzf integrates with other CLI tools
+
+**Alternatives Considered**:
+1. Show help text: Less useful, requires more typing
+2. List all passwords: Useful but doesn't allow selection
+3. Error: Not user-friendly
+
+**Consequences**:
+- `pass` alone enters fuzzy search mode
+- User can still use `pass ls` for simple listing
+- User can use `pass --help` for help
+- Requires terminal support
+
+**Related**: pass-fuzzy-rm/spec.md, pass-replacement-spec.md (Section 2.7)
+
+---
+
+### [AD-008] No Confirmation for Remove
+
+**Status**: Accepted  
+**Date**: 2026-06-05  
+**Context**: Should `pass rm` prompt for confirmation before deleting a password?
+
+**Decision**: No confirmation prompt. Delete immediately. User can recover from git history if needed.
+
+**Rationale**:
+- User explicitly requested this behavior
+- Git history preserves the password (can recover with `git checkout`)
+- Matches Unix pass behavior with `--force` flag
+- Power users prefer this workflow
+
+**Alternatives Considered**:
+1. Always confirm: More safe but slower for power users
+2. Confirm only for fuzzy search: Inconsistent behavior
+3. Configurable via environment variable: Adds complexity
+
+**Consequences**:
+- `pass rm <path>` deletes immediately
+- `pass rm` with fuzzy search deletes on Enter without confirmation
+- Mistakes can be recovered from git history
+- User must be aware of this behavior
+
+**Related**: pass-fuzzy-rm/spec.md (Section 8 - OQ-002), pass-replacement-spec.md (Section 2.6)
+
+---
+
+### [AD-009] Fuzzy Matching Algorithm
+
+**Status**: Accepted  
+**Date**: 2026-06-05  
+**Context**: Which fuzzy matching algorithm should be used for the search feature?
+
+**Decision**: Use subsequence matching with scoring based on:
+1. Characters must appear in order (subsequence)
+2. Earlier matches score better
+3. Consecutive matches get bonus points
+4. Matches at start of path components get bonus points
+5. Shorter paths score better
+
+**Rationale**:
+- Simple to implement and understand
+- Provides good results for typical password paths
+- Similar to fzf's matching algorithm
+- Balances speed and quality
+
+**Alternatives Considered**:
+1. Levenshtein distance: More accurate but slower
+2. Exact substring only: Less flexible
+3. Regex matching: More powerful but complex for users
+4. Fzf's exact algorithm: More complex to implement
+
+**Consequences**:
+- Query "twt" matches "social/twitter.com/admin"
+- Query "gm" matches "email/gmail.com/user"
+- Matching is case-insensitive
+- Results are sorted by score, then alphabetically
+
+**Related**: pass-fuzzy-rm/spec.md (Section 1.2)
+
+---
+
+### [AD-010] Terminal Keybindings
+
+**Status**: Accepted  
+**Date**: 2026-06-05  
+**Context**: Which keybindings should be supported in fuzzy search mode?
+
+**Decision**: Support standard bindings:
+- Arrow keys: Navigation
+- Enter: Select
+- Esc/Ctrl+C: Exit
+- Ctrl+A: Move cursor to start of query
+- Ctrl+E: Move cursor to end of query
+- Ctrl+K: Delete from cursor to end of query
+- Ctrl+L: Clear entire query
+- Ctrl+W: Delete word before cursor
+- Left/Right arrows: Move cursor in query
+- Backspace/Delete: Edit query
+- Tab: Toggle between search and list
+- Page Up/Down: Scroll by page
+- Home/End: Move to first/last item
+
+**Rationale**:
+- Matches fzf's keybindings where applicable
+- Standard readline-style bindings for editing
+- Intuitive for users familiar with CLI tools
+- Provides all necessary functionality
+
+**Alternatives Considered**:
+1. Vim-style bindings: Familiar to vim users but less intuitive for others
+2. Emacs-style bindings: Similar to chosen approach
+3. Minimal bindings only: Less powerful, more limited
+
+**Consequences**:
+- Full-featured text editing in search input
+- Consistent with fzf and other CLI tools
+- Requires more complex key handling code
+
+**Related**: pass-fuzzy-rm/spec.md (Section 1.4, 8 - OQ-003)
+
+---
+
+### [AD-011] Respect .gitignore
+
+**Status**: Accepted  
+**Date**: 2026-06-05  
+**Context**: Should fuzzy search respect .gitignore and only show tracked files?
+
+**Decision**: Yes, only show files that would be tracked by git. Exclude the `.git/` directory and any files matching patterns in `.gitignore`.
+
+**Rationale**:
+- User explicitly requested this (OQ-001 answer)
+- Prevents showing temporary or backup files
+- Consistent with git-based workflow
+- Matching files are the only valid password files anyway
+
+**Alternatives Considered**:
+1. Show all .gpg files regardless of git: Simpler but may show unwanted files
+2. Configurable behavior: Adds complexity for minimal benefit
+
+**Consequences**:
+- Only .gpg files in the password store that are tracked by git will be shown
+- .git/ directory is always excluded
+- Implementation must check git ignore patterns
+
+**Related**: pass-fuzzy-rm/spec.md (Section 1.6, 8 - OQ-001)
+
+---
+
 ## Design Decisions
 
 ### [DD-001] Command Syntax Compatibility

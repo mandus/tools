@@ -46,13 +46,10 @@ func Clear() error {
 
 // IsAvailable checks if clipboard functionality is available.
 func IsAvailable() bool {
-	cmd := exec.Command("clip")
-	// Just check if the command exists
+	// Try to find the clip command
+	cmd := exec.Command("where", "clip")
 	if err := cmd.Run(); err != nil {
-		// Check if it's an exit error (command not found vs execution error)
-		if _, ok := err.(*exec.ExitError); !ok {
-			return false
-		}
+		return false
 	}
 	return true
 }

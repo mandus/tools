@@ -113,6 +113,44 @@ This checklist tracks implementation progress for the pass replacement tool. Eac
   - [ ] Handle multi-line content
   - [ ] Error handling for clipboard operations
   - [ ] Create clipboard package
+
+## Phase 5: Remove Command & Fuzzy Search
+
+- [ ] **Fuzzy Matching Package (pkg/fuzzy/)**
+  - [ ] Implement `Match(query, target string) bool` - subsequence check
+  - [ ] Implement `Score(query, target string) int` - ranking algorithm
+  - [ ] Implement `Filter(query string, items []string) []MatchResult`
+  - [ ] Create fuzzy package with tests
+
+- [ ] **Terminal UI Package (pkg/terminal/)**
+  - [ ] Implement ANSI escape code utilities
+  - [ ] Implement cursor control functions
+  - [ ] Implement terminal size detection
+  - [ ] Implement key reading with special key support
+  - [ ] Create terminal package with tests
+
+- [ ] **Fuzzy Search Command (cmd/fuzzy.go)**
+  - [ ] Implement main fuzzy search loop
+  - [ ] Implement display rendering
+  - [ ] Implement query input handling
+  - [ ] Implement list navigation
+  - [ ] Implement match highlighting
+  - [ ] Handle all keybindings (Ctrl+A, Ctrl+E, Ctrl+K, arrows, etc.)
+  - [ ] Support different modes (show, clip, rm)
+  - [ ] Create fuzzy command tests
+
+- [ ] **Remove Command (cmd/rm.go)**
+  - [ ] Implement rm command with cobra
+  - [ ] Add flags: --no-commit/-n, --force/-f, --clip/-c
+  - [ ] Implement removePassword() function
+  - [ ] Handle explicit path removal
+  - [ ] Handle fuzzy search mode for rm
+  - [ ] Git integration (git rm + commit)
+  - [ ] Create rm command tests
+
+- [ ] **Git Integration Enhancements**
+  - [ ] Add RemoveAndCommit() function to pkg/git/
+  - [ ] Update git tests
   
 - [ ] **Clipboard Auto-Clear**
   - [ ] Implement timer for auto-clear (using time.Timer)
@@ -222,12 +260,14 @@ This checklist tracks implementation progress for the pass replacement tool. Eac
 
 - [ ] **pass edit** - Edit password in editor
 - [ ] **pass generate** - Generate random password
-- [ ] **pass rm** - Remove password
+- [x] **pass rm** - Remove password
 - [ ] **pass mv/cp** - Move/copy password
 - [ ] **pass git** - Pass-through git commands
 - [ ] **pass tree** - Tree view
 - [ ] **pass otp** - One-time password support
 - [ ] **pass import/export** - Bulk operations
+- [x] **pass fuzzy search** - Interactive fuzzy finder
+- [x] **pass rm with fuzzy search** - Remove with fuzzy selection
 
 ---
 
