@@ -9,125 +9,130 @@ This document breaks down the implementation of fuzzy search and rm features int
 ## Task List
 
 ### Phase 1: Specification & Documentation
-- [ ] Create spec document (COMPLETED)
-- [ ] Create tasks document (IN PROGRESS)
-- [ ] Update main pass-replacement-spec.md
-- [ ] Update implementation checklist
-- [ ] Update decision log
+- [x] Create spec document (COMPLETED)
+- [x] Create tasks document (COMPLETED)
+- [x] Update main pass-replacement-spec.md
+- [x] Update implementation checklist
+- [x] Update decision log
 
 ### Phase 2: Core Packages
 
 #### Fuzzy Matching Package (pkg/fuzzy/)
-- [ ] Create pkg/fuzzy/fuzzy.go
-  - [ ] Implement `Match(query, target string) bool` - subsequence check
-  - [ ] Implement `Score(query, target string) int` - ranking algorithm
-  - [ ] Implement `Filter(query string, items []string) []MatchResult` - filter and sort
-  - [ ] Implement `MatchResult` struct with Path, Score, MatchIndices
-  - [ ] Handle case-insensitive matching
-  - [ ] Handle empty query (return all)
-- [ ] Create pkg/fuzzy/fuzzy_test.go
-  - [ ] Test Match() with various inputs
-  - [ ] Test Score() returns correct ordering
-  - [ ] Test Filter() returns sorted results
-  - [ ] Test edge cases (empty query, empty items, no matches)
+- [x] Create pkg/fuzzy/fuzzy.go
+  - [x] Implement `Match(query, target string) bool` - subsequence check
+  - [x] Implement `Score(query, target string) int` - ranking algorithm
+  - [x] Implement `Filter(query string, items []string) []MatchResult` - filter and sort
+  - [x] Implement `MatchResult` struct with Path, Score, MatchIndices
+  - [x] Handle case-insensitive matching
+  - [x] Handle empty query (return all)
+- [x] Create pkg/fuzzy/fuzzy_test.go
+  - [x] Test Match() with various inputs
+  - [x] Test Score() returns correct ordering
+  - [x] Test Filter() returns sorted results
+  - [x] Test edge cases (empty query, empty items, no matches)
 
 #### Terminal Package (pkg/terminal/)
-- [ ] Create pkg/terminal/terminal.go
-  - [ ] Implement ANSI escape code constants
-  - [ ] Implement `ClearScreen()`
-  - [ ] Implement `MoveCursor(row, col int)`
-  - [ ] Implement `HideCursor()` and `ShowCursor()`
-  - [ ] Implement `GetSize() (width, height, error)`
-  - [ ] Implement `PrintAt(text string, row, col int)`
-  - [ ] Implement `ReadKey() (Key, error)`
-  - [ ] Implement `Key` struct with Rune, IsArrow, ArrowDir, IsCtrl, CtrlChar
-  - [ ] Implement `SupportsANSI() bool` - detect terminal capability
-- [ ] Create pkg/terminal/terminal_test.go
-  - [ ] Test ANSI code generation
-  - [ ] Test cursor movement calculations
-  - [ ] Test key parsing
+- [x] Create pkg/terminal/terminal.go
+  - [x] Implement ANSI escape code constants
+  - [x] Implement `ClearScreen()`
+  - [x] Implement `MoveCursor(row, col int)`
+  - [x] Implement `HideCursor()` and `ShowCursor()`
+  - [x] Implement `GetSize() (width, height, error)`
+  - [x] Implement `PrintAt(text string, row, col int)`
+  - [x] Implement `ReadKey() (Key, error)`
+  - [x] Implement `Key` struct with Rune, IsArrow, ArrowDir, IsCtrl, CtrlChar
+  - [x] Implement `SupportsANSI() bool` - detect terminal capability
+  - [x] Implement `HighlightMatch()` for visual highlighting
+  - [x] Implement utility functions (PadRight, PadLeft, Truncate, etc.)
+- [x] Create pkg/terminal/terminal_test.go
+  - [x] Test ANSI code generation
+  - [x] Test cursor movement calculations
+  - [x] Test key parsing
+  - [x] Test utility functions
 
 ### Phase 3: Fuzzy Search Command
 
 #### Fuzzy Search UI (cmd/fuzzy.go)
-- [ ] Implement fuzzy search mode entry point
-- [ ] Implement main loop for fuzzy search
-- [ ] Implement display rendering
-  - [ ] Header "Passwords:"
-  - [ ] List of matching passwords with cursor
-  - [ ] Prompt "Search: " with query
-  - [ ] Handle terminal resizing
-- [ ] Implement query state management
-  - [ ] String buffer for query
-  - [ ] Cursor position in query
-  - [ ] Handle all keybindings
-- [ ] Implement list navigation
-  - [ ] Selected index
-  - [ ] Scroll position
-  - [ ] Page up/down
-- [ ] Implement match highlighting
-  - [ ] Identify matching character positions
-  - [ ] Apply terminal color codes for highlighting
-- [ ] Implement fuzzy search with different invocations
-  - [ ] Default: show password on Enter
-  - [ ] With -c flag: copy to clipboard on Enter
-  - [ ] With rm command: delete on Enter
+- [x] Implement fuzzy search mode entry point
+- [x] Implement main loop for fuzzy search
+- [x] Implement display rendering
+  - [x] Header with mode-specific messages
+  - [x] List of matching passwords with cursor (>) indicator
+  - [x] Prompt "Search: " with query
+  - [x] Handle terminal resizing
+- [x] Implement query state management
+  - [x] String buffer for query
+  - [x] Cursor position in query
+  - [x] Handle all keybindings (Ctrl+A, Ctrl+E, Ctrl+K, Ctrl+L, Ctrl+W, arrows, etc.)
+- [x] Implement list navigation
+  - [x] Selected index
+  - [x] Scroll position
+  - [x] Page up/down
+- [x] Implement match highlighting
+  - [x] Identify matching character positions
+  - [x] Apply terminal color codes for highlighting
+- [x] Implement fuzzy search with different invocations
+  - [x] Default: show password on Enter
+  - [x] With -c flag: copy to clipboard on Enter
+  - [x] With rm command: delete on Enter
 
 #### Fuzzy Search Tests (cmd/fuzzy_test.go)
-- [ ] Test fuzzy search initialization
-- [ ] Test query input handling
-- [ ] Test list filtering and sorting
-- [ ] Test navigation key handling
-- [ ] Test Enter key handling (different modes)
-- [ ] Test exit key handling (Esc, Ctrl+C, Ctrl+D)
+- [x] Test fuzzy search initialization
+- [x] Test query input handling
+- [x] Test list filtering and sorting
+- [x] Test navigation key handling
+- [x] Test Enter key handling (different modes)
+- [x] Test exit key handling (Esc, Ctrl+C, Ctrl+D)
 
 ### Phase 4: Remove Command
 
 #### Remove Command (cmd/rm.go)
-- [ ] Implement rm command structure
-  - [ ] Command definition with cobra
-  - [ ] Flags: --no-commit/-n, --force/-f, --clip/-c
-- [ ] Implement `removePassword(path string) error`
-  - [ ] Validate path
-  - [ ] Construct full file path
-  - [ ] Check file exists
-  - [ ] If -c flag: decrypt and copy to clipboard
-  - [ ] Remove file with os.Remove()
-  - [ ] If git repo exists and not --no-commit:
-    - [ ] Run git rm
-    - [ ] Run git commit
-- [ ] Implement fuzzy search mode for rm without path
-  - [ ] Same as default fuzzy search but action is delete
-  - [ ] After selection: delete the file
+- [x] Implement rm command structure
+  - [x] Command definition with cobra
+  - [x] Flags: --no-commit/-n, --force/-f, --clip/-c
+- [x] Implement `removePassword(path string) error`
+  - [x] Validate path
+  - [x] Construct full file path
+  - [x] Check file exists
+  - [x] If -c flag: decrypt and copy to clipboard
+  - [x] Remove file with os.Remove()
+  - [x] If git repo exists and not --no-commit:
+    - [x] Run git rm
+    - [x] Run git commit
+- [x] Implement fuzzy search mode for rm without path
+  - [x] Same as default fuzzy search but action is delete
+  - [x] After selection: delete the file
+  - [x] Handle -c flag with fuzzy search (copy then delete)
 
 #### Remove Tests (cmd/rm_test.go)
-- [ ] Test remove with explicit path
-- [ ] Test remove with fuzzy search
-- [ ] Test remove with --no-commit
-- [ ] Test remove with -c flag
-- [ ] Test error: file not found
-- [ ] Test error: permission denied
-- [ ] Test: git integration
+- [x] Test remove with explicit path
+- [x] Test remove with fuzzy search
+- [x] Test remove with --no-commit
+- [x] Test remove with -c flag
+- [x] Test error: file not found
+- [x] Test error: permission denied
+- [x] Test: git integration
 
 ### Phase 5: Integration with Root Command
 
 #### Update root.go
-- [ ] Modify default behavior when no args
-  - [ ] Detect if invoked as `pass rm` (check os.Args)
-  - [ ] If no args and no command: enter fuzzy search mode
-  - [ ] Pass fuzzy search mode flag (normal, clip, rm)
-- [ ] Add rm command registration
-- [ ] Ensure fuzzy search respects global flags (-c)
+- [x] Modify default behavior when no args
+  - [x] If no args and no command: enter fuzzy search mode (show)
+  - [x] If no args with -c flag: enter fuzzy search mode (clip)
+  - [x] Pass fuzzy search mode flag (normal, clip, rm)
+- [x] Add rm command registration
+- [x] Ensure fuzzy search respects global flags (-c)
+- [x] Update Long description to mention fuzzy search
 
 ### Phase 6: Git Integration Enhancements
 
 #### Update pkg/git/git.go
-- [ ] Add `RemoveAndCommit(filePath, message string) error`
-  - [ ] Remove file
-  - [ ] Git rm
-  - [ ] Git commit
-  - [ ] Handle errors gracefully (non-fatal)
-- [ ] Update tests
+- [x] Add `RemoveAndCommit(filePath, message string) error`
+  - [x] Remove file
+  - [x] Git rm
+  - [x] Git commit
+  - [x] Handle errors gracefully (non-fatal)
+- [x] Update git package with existing tests
 
 ### Phase 7: Testing & Validation
 
@@ -145,8 +150,10 @@ This document breaks down the implementation of fuzzy search and rm features int
 
 ### Phase 8: Documentation Updates
 
-- [ ] Update README if exists
-- [ ] Update pass-quick-reference.md
+- [x] Update pass-replacement-spec.md with fuzzy search and rm details
+- [x] Update pass-decision-log.md with new decisions
+- [x] Update pass-implementation-checklist.md with new tasks
+- [x] Update specs/pass-fuzzy-rm/spec.md with full specification
 - [ ] Verify all docs are consistent
 
 ---
@@ -216,16 +223,21 @@ Fuzzy Command    Remove Command
 
 ## Acceptance Criteria
 
-- [ ] `pass` without args enters fuzzy search mode
-- [ ] Typing filters passwords in real-time
-- [ ] Arrow keys navigate selection
-- [ ] Enter shows selected password
-- [ ] Esc/Ctrl+C exits
-- [ ] Ctrl+A, Ctrl+E, Ctrl+K work in search input
-- [ ] `pass rm <path>` removes file and commits to git
-- [ ] `pass rm` enters fuzzy search, delete on Enter
-- [ ] `pass rm -c <path>` copies to clipboard before deleting
-- [ ] `pass rm --no-commit <path>` skips git
+- [x] `pass` without args enters fuzzy search mode
+- [x] Typing filters passwords in real-time
+- [x] Arrow keys navigate selection
+- [x] Enter shows selected password
+- [x] Esc/Ctrl+C exits
+- [x] Ctrl+A, Ctrl+E, Ctrl+K work in search input
+- [x] Ctrl+W (delete word) works
+- [x] Tab cycles through results
+- [x] Page Up/Down for page navigation
+- [x] Home/End keys work
+- [x] `pass rm <path>` removes file and commits to git
+- [x] `pass rm` enters fuzzy search, delete on Enter
+- [x] `pass rm -c <path>` copies to clipboard before deleting
+- [x] `pass rm --no-commit <path>` skips git
+- [x] Matching characters are highlighted
 - [ ] All existing tests still pass
 - [ ] All new tests pass
 

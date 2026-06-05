@@ -882,14 +882,15 @@ sudo mv pass /usr/local/bin/
 
 1. **pass edit**: Edit password in default editor
 2. **pass generate**: Generate random password
-3. **pass rm**: Remove password
-4. **pass mv/cp**: Move/copy password
-5. **pass git**: Pass-through git commands
-6. **pass tree**: Tree view of password store
-7. **pass otp**: One-time password support
-8. **pass import/export**: Bulk operations
-9. **GUI wrapper**: Optional GUI interface
-10. **Browser integration**: Auto-fill support
+3. **pass rm**: Remove password (IMPLEMENTED)
+4. **pass fuzzy search**: Interactive fuzzy search mode (IMPLEMENTED)
+5. **pass mv/cp**: Move/copy password
+6. **pass git**: Pass-through git commands
+7. **pass tree**: Tree view of password store
+8. **pass otp**: One-time password support
+9. **pass import/export**: Bulk operations
+10. **GUI wrapper**: Optional GUI interface
+11. **Browser integration**: Auto-fill support
 
 ---
 

@@ -18,27 +18,40 @@ pass stores passwords as GPG-encrypted files in ~/.password-store/
 and integrates with git for version control.
 
 If called with a path argument and no command, it shows the password (same as 'pass show').
+If called without arguments, it enters interactive fuzzy search mode.
 
 Usage:
   pass [command] [options] [path]
   pass [options] <path>              # Show password (default command)
+  pass                              # Interactive fuzzy search mode
 
 Examples:
   pass insert email/gmail.com/user    Insert a new password
   pass email/gmail.com/user           Show a password
   pass -c email/gmail.com/user       Copy password to clipboard
+  pass                              Interactive fuzzy search
   pass ls                            List all passwords
-  pass find gmail                    Search for passwords`,
+  pass find gmail                    Search for passwords
+  pass rm                            Remove password with fuzzy search
+  pass rm <path>                     Remove specific password`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// If no args and no command flags, enter fuzzy search mode
+		// If no args, check for flags
 		if len(args) == 0 {
-			// Check if any flags were set
-			if cmd.Flags().Changed("help") || cmd.Flags().Changed("version") || cmd.Flags().Changed("clip") {
-				return nil // Let cobra handle these flags
+			// Check if help or version flags were set - let cobra handle those
+			if cmd.Flags().Changed("help") || cmd.Flags().Changed("version") {
+				return nil
 			}
-			// Enter fuzzy search mode
-			return fuzzySearchMode()
+			// Check if clip flag is set - enter fuzzy search mode with clip
+			clipFlagChanged, _ := cmd.Flags().GetBool("clip")
+			if clipFlagChanged {
+				// Set global clip flag
+				clipFlag = true
+				// Enter fuzzy search mode with clip
+				return RunInteractiveFuzzySearch(FuzzyModeClip)
+			}
+			// Enter fuzzy search mode (default: show)
+			return RunInteractiveFuzzySearch(FuzzyModeShow)
 		}
 		// If args provided without explicit command, treat as show command
 		return showPassword(args[0])

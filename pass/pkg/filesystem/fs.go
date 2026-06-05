@@ -137,6 +137,11 @@ func RunCommand(name string, args ...string) error {
 	return cmd.Run()
 }
 
+// JoinPath joins path elements using the OS-specific separator.
+func JoinPath(elem ...string) string {
+	return filepath.Join(elem...)
+}
+
 // EnsurePasswordStore ensures the password store directory exists.
 func EnsurePasswordStore(storeDir string) error {
 	if _, err := os.Stat(storeDir); os.IsNotExist(err) {

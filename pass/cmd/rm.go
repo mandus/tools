@@ -19,7 +19,7 @@ var rmCmd = &cobra.Command{
 	Long: `Remove a password from the store.
 
 If a path is provided, removes that specific password.
-If no path is provided, will list available passwords for selection.
+If no path is provided, will enter interactive fuzzy search mode to select a password.
 
 The password file is deleted and the removal is committed to git
 (by default). The password remains in git history for recovery if needed.`,
@@ -32,15 +32,20 @@ The password file is deleted and the removal is committed to git
 		
 		// Get flags
 		noCommit, _ := cmd.Flags().GetBool("no-commit")
+		force, _ := cmd.Flags().GetBool("force")
 		clip, _ := cmd.Flags().GetBool("clip")
+		
+		// --force is an alias for --no-commit
+		if force {
+			noCommit = true
+		}
 		
 		if path != "" {
 			return removePassword(path, noCommit, clip)
 		}
 		
-		// No path provided - list passwords and let user select
-		// For now, just show error. Fuzzy search will be added later.
-		return listAndRemove(noCommit, clip)
+		// No path provided - enter fuzzy search mode
+		return runRmFuzzySearch(noCommit, clip)
 	},
 }
 
@@ -48,6 +53,7 @@ The password file is deleted and the removal is committed to git
 var (
 	noCommitFlagRm bool
 	forceFlagRm    bool
+	clipFlagRm     bool
 )
 
 func addRmCmd() {
@@ -56,8 +62,6 @@ func addRmCmd() {
 	rmCmd.Flags().BoolVarP(&clipFlagRm, "clip", "c", false, "Copy password to clipboard before deleting")
 	rootCmd.AddCommand(rmCmd)
 }
-
-var clipFlagRm bool
 
 // removePassword removes a password at the specified path.
 func removePassword(path string, noCommit, clip bool) error {
@@ -117,59 +121,83 @@ func removePassword(path string, noCommit, clip bool) error {
 	return nil
 }
 
-// listAndRemove lists all passwords and lets user select one to remove.
-func listAndRemove(noCommit, clip bool) error {
-	storeDir := GetPasswordStoreDir()
-
-	// Check if store exists
-	if _, err := os.Stat(storeDir); os.IsNotExist(err) {
-		return fmt.Errorf("pass: password store does not exist. Use 'pass insert' to create it.")
-	}
-
-	// Collect all password files
-	var passwords []string
-	err := filepath.Walk(storeDir, func(path string, info os.FileInfo, err error) error {
+// runRmFuzzySearch enters interactive fuzzy search mode for removing a password.
+// When user selects a password, it will be removed.
+func runRmFuzzySearch(noCommit, clip bool) error {
+	// If clip flag is set, we need special handling
+	// Since fuzzy search for rm with clip needs to copy before deleting
+	if clip {
+		// For clip mode in rm, we'll handle it in the RunInteractiveFuzzySearch
+		// by passing a special mode or handling it separately
+		// For now, we'll use a simple approach: do fuzzy search, then copy and delete
+		selected, err := InteractiveFuzzySearch(FuzzyModeShow)
 		if err != nil {
 			return err
 		}
-
-		// Skip .git directory
-		if info.IsDir() && info.Name() == ".git" {
-			return filepath.SkipDir
+		if selected == "" {
+			return nil
 		}
-
-		// Only process .gpg files
-		if !info.IsDir() && strings.HasSuffix(info.Name(), ".gpg") {
-			// Get relative path from store directory
-			relPath, err := filepath.Rel(storeDir, path)
-			if err != nil {
-				return err
-			}
-			// Normalize path separators for display
-			relPath = filesystem.NormalizePathForDisplay(relPath)
-			// Strip .gpg extension
-			passwordPath := strings.TrimSuffix(relPath, ".gpg")
-			passwords = append(passwords, passwordPath)
+		// Get the full path
+		fullPath := getRmFullPath(selected)
+		
+		// Copy to clipboard first
+		password, err := gpg.DecryptFile(fullPath)
+		if err != nil {
+			return err
 		}
-
-		return nil
-	})
-
+		if err := filesystem.CopyToClipboard(password); err != nil {
+			return fmt.Errorf("pass: failed to copy to clipboard: %v", err)
+		}
+		fmt.Printf("Copied %s to clipboard.\n", selected)
+		go filesystem.StartClipboardClearTimer()
+		
+		// Now remove it
+		return removePasswordInternal(fullPath, selected, noCommit)
+	}
+	
+	// Normal rm without clip
+	selected, err := InteractiveFuzzySearch(FuzzyModeRm)
 	if err != nil {
-		return fmt.Errorf("pass: failed to list passwords: %v", err)
+		return err
+	}
+	if selected == "" {
+		return nil
+	}
+	
+	fullPath := getRmFullPath(selected)
+	return removePasswordInternal(fullPath, selected, noCommit)
+}
+
+// getRmFullPath converts a password path to its full filesystem path
+func getRmFullPath(path string) string {
+	storeDir := GetPasswordStoreDir()
+	normalized := filesystem.NormalizePath(path)
+	if !strings.HasSuffix(normalized, ".gpg") {
+		normalized += ".gpg"
+	}
+	return filepath.Join(storeDir, filepath.FromSlash(normalized))
+}
+
+// removePasswordInternal removes a password file without doing path validation
+// (path is already validated in fuzzy search)
+func removePasswordInternal(fullPath, displayPath string, noCommit bool) error {
+	// Remove the file
+	if err := os.Remove(fullPath); err != nil {
+		return fmt.Errorf("pass: failed to remove %s: %v", displayPath, err)
 	}
 
-	if len(passwords) == 0 {
-		return fmt.Errorf("pass: no passwords found in store")
+	// Git integration - remove and commit
+	if !noCommit {
+		// Check if this is a git repo
+		storeDir := GetPasswordStoreDir()
+		gitDir := filepath.Join(storeDir, ".git")
+		if _, err := os.Stat(gitDir); err == nil {
+			if err := git.RemoveAndCommit(fullPath, "Remove "+displayPath); err != nil {
+				fmt.Fprintf(os.Stderr, "pass: warning: git operations failed: %v\n", err)
+			}
+		}
 	}
 
-	// For now, just print the list and return
-	// TODO: Implement fuzzy search selection
-	fmt.Println("Passwords:")
-	for i, p := range passwords {
-		fmt.Printf("  %d. %s\n", i+1, p)
-	}
-	fmt.Println("\nNote: Fuzzy search selection coming soon. Specify path directly for now.")
-
+	fmt.Printf("Password removed successfully.\n")
 	return nil
 }
