@@ -99,6 +99,30 @@ func AddAndCommit(filePath, message string) error {
 	return nil
 }
 
+// RemoveAndCommit removes a file from git and commits the removal.
+func RemoveAndCommit(filePath, message string) error {
+	// Get directory of the file
+	dir := filepath.Dir(filePath)
+	
+	// Remove file from git
+	cmd := exec.Command("git", "rm", filepath.Base(filePath))
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		// Non-fatal: file is already removed, just warn
+		fmt.Fprintf(os.Stderr, "pass: warning: git rm failed: %v\n", err)
+	}
+	
+	// Commit the removal
+	cmd = exec.Command("git", "commit", "-m", message)
+	cmd.Dir = dir
+	if err := cmd.Run(); err != nil {
+		// Non-fatal: warn but continue
+		fmt.Fprintf(os.Stderr, "pass: warning: git commit failed: %v\n", err)
+	}
+	
+	return nil
+}
+
 // CheckGit checks if git is installed and available.
 func CheckGit() error {
 	cmd := exec.Command("git", "--version")

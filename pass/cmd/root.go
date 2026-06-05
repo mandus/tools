@@ -31,13 +31,14 @@ Examples:
   pass find gmail                    Search for passwords`,
 	Args: cobra.MaximumNArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// If no args and no command flags, show help
+		// If no args and no command flags, enter fuzzy search mode
 		if len(args) == 0 {
 			// Check if any flags were set
 			if cmd.Flags().Changed("help") || cmd.Flags().Changed("version") || cmd.Flags().Changed("clip") {
 				return nil // Let cobra handle these flags
 			}
-			return cmd.Help()
+			// Enter fuzzy search mode
+			return fuzzySearchMode()
 		}
 		// If args provided without explicit command, treat as show command
 		return showPassword(args[0])
@@ -61,6 +62,7 @@ func Execute() error {
 	addShowCmd()
 	addLsCmd()
 	addFindCmd()
+	addRmCmd()
 
 	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {
