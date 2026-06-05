@@ -6,265 +6,52 @@ Some simple tools for my own productivity.
 
 ## pass - Password Store Replacement
 
-A Windows-compatible replacement for the Unix [password-store](https://www.passwordstore.org/) (`pass`) tool.
+Windows-compatible `pass` (password-store) replacement in Go.
 
-### Overview
-
-`pass` manages GPG-encrypted password files in `~/.password-store/` with git integration for version control. This implementation provides the same basic functionality as the Unix version but is built in Go for cross-platform compatibility.
-
-### Prerequisites
-
-- **Go 1.20+** - For building the tool
-- **GnuPG (GPG)** - For encryption/decryption (GPG4Win on Windows)
-- **Git** - For version control integration
-
-### Installation
-
-#### 1. Install Dependencies
-
-**Windows:**
-- Install [Go](https://golang.org/dl/) (1.20 or later)
-- Install [GPG4Win](https://www.gpg4win.org/)
-- Install [Git for Windows](https://gitforwindows.org/)
-
-**Linux/macOS:**
+### Build
 ```bash
-# Debian/Ubuntu
-sudo apt install golang gnupg git
-
-# RHEL/CentOS
-sudo dnf install golang gnupg git
-
-# macOS (Homebrew)
-brew install go gnupg git
-```
-
-#### 2. Build from Source
-
-```bash
-# Clone the repository (if not already cloned)
-git clone <repository-url>
-cd tools
-
-# Build the pass binary
 cd pass
-go build -o pass.exe .
-
-# On Linux/macOS:
-go build -o pass .
+go build -o pass.exe .  # Windows
+go build -o pass .     # Linux/macOS
 ```
 
-#### 3. Install the Binary
-
-**Windows:**
-```cmd
-copy pass\pass.exe C:\Windows\System32\
-```
-
-**Linux/macOS:**
+### Install
 ```bash
+# Windows: copy pass.exe to PATH
+copy pass\pass.exe C:\Windows\System32\
+
+# Linux/macOS:
 sudo cp pass/pass /usr/local/bin/
 ```
 
-Or add the `pass/` directory to your PATH.
-
-### Usage
-
-#### Basic Commands
-
+### Test
 ```bash
-# List all passwords
-pass ls
-
-# List passwords under a specific path
-pass ls email/
-
-# Show a password
-pass email/gmail.com/myemail@gmail.com
-
-# Copy password to clipboard
-pass -c email/gmail.com/myemail@gmail.com
-
-# Insert a new password
-pass insert email/gmail.com/myemail@gmail.com
-
-# Search for passwords
-pass find gmail
-
-# Show help
-pass --help
-pass insert --help
-```
-
-#### Configuration
-
-Set environment variables to customize behavior:
-
-```bash
-# Custom password store location
-export PASSWORD_STORE_DIR="$HOME/custom/passwords"
-
-# Specific GPG key ID
-export PASS_GPG_ID="ABCD1234"
-
-# Clipboard auto-clear timeout (seconds)
-export PASS_CLIPBOARD_TIMEOUT=60
-
-# Disable clipboard auto-clear
-export PASS_CLIPBOARD_CLEAR=false
-
-# Git user override
-export PASS_GIT_NAME="Your Name"
-export PASS_GIT_EMAIL="your@email.com"
-```
-
-### Running Tests
-
-#### Unit Tests
-
-```bash
-# Run all tests
+# Run tests
 cd pass
 go test ./...
 
-# Run tests with verbose output
-go test -v ./...
-
-# Run specific test package
-go test -v ./pkg/gpg/
-
-# Run specific test
-go test -v -run TestShowCommand ./tests/
-```
-
-#### Manual Testing
-
-```bash
-# Build the binary
-cd pass
-go build -o pass.exe .
-
-# Test listing (should show existing passwords if any)
+# Manual test
 ./pass.exe ls
-
-# Test finding
 ./pass.exe find gmail
-
-# Test showing a password (will fail without proper GPG key)
-./pass.exe email/gmail.com/myemail@gmail.com
-
-# Test inserting a password
-./pass.exe insert test/example
-# Enter password twice when prompted
-# Check that test/example.gpg was created
-
-# Verify git integration
-cd ~/.password-store
-git log --oneline
+./pass.exe insert test/password
 ```
 
-### Project Structure
-
-```
-pass/
-├── go.mod                    # Go module definition
-├── main.go                   # Entry point
-├── pass.exe                  # Compiled binary (Windows)
-├── cmd/
-│   ├── root.go               # Root command and global flags
-│   ├── insert.go             # Insert command
-│   ├── show.go               # Show command
-│   ├── ls.go                 # List command
-│   └── find.go               # Find command
-├── pkg/
-│   ├── gpg/                  # GPG encryption/decryption
-│   │   └── gpg.go
-│   ├── git/                  # Git integration
-│   │   └── git.go
-│   ├── filesystem/           # Filesystem utilities
-│   │   └── fs.go
-│   ├── clipboard/            # Clipboard operations
-│   │   └── clipboard.go
-│   └── config/               # Configuration
-│       └── config.go
-└── tests/
-    └── show_test.go           # Test files
-```
-
-### Development
-
-#### Adding New Commands
-
-1. Create a new file in `cmd/` (e.g., `rm.go`)
-2. Implement the command using cobra
-3. Register it in `root.go` with `add<Command>Cmd()`
-4. Add to `Execute()` function
-
-Example structure:
-```go
-package cmd
-
-var myCmd = &cobra.Command{
-    Use:   "mycommand [args]",
-    Short: "Description",
-    RunE: func(cmd *cobra.Command, args []string) error {
-        // Implementation
-        return nil
-    },
-}
-
-func addMyCmd() {
-    rootCmd.AddCommand(myCmd)
-}
-```
-
-#### Building for Different Platforms
-
+### Usage
 ```bash
-# Windows
-GOOS=windows GOARCH=amd64 go build -o pass-windows.exe .
-
-# Linux
-GOOS=linux GOARCH=amd64 go build -o pass-linux .
-
-# macOS
-GOOS=darwin GOARCH=amd64 go build -o pass-macos .
-
-# ARM64
-GOOS=windows GOARCH=arm64 go build -o pass-arm64.exe .
+pass ls                    # List passwords
+pass find gmail            # Search
+pass email/gmail.com/user  # Show password
+pass -c email/...          # Copy to clipboard
+pass insert email/...      # Add new password
 ```
 
-### Troubleshooting
-
-**"gpg: command not found"**
-- Ensure GPG is installed and in your PATH
-- Windows: Check that `C:\Program Files (x86)\GnuPG\bin` is in PATH
-
-**"No secret key available"**
-- Generate a GPG key pair: `gpg --full-generate-key`
-- Or import an existing key
-
-**"git: command not found"**
-- Ensure Git is installed and in your PATH
-- Git integration is optional for basic operations
-
-**"pass: command not found"**
-- Ensure `pass.exe` or `pass` is in your PATH
-- Or use the full path to the binary
-
-### Specification Documents
-
-For full technical details, see the specification documents in `docs/`:
-- `pass-replacement-spec.md` - Detailed technical specification
-- `pass-spec-kit.md` - Spec Kit aligned document
-- `pass-implementation-checklist.md` - Implementation tracking
-- `pass-decision-log.md` - Design decisions and rationale
-- `pass-quick-reference.md` - Quick reference guide
+### Prerequisites
+- Go 1.20+
+- GnuPG (GPG4Win on Windows)
+- Git (optional, for version control)
 
 ---
 
 ## Other Tools
 
-This repository also contains:
 - `shell/gitprompt.exe` - Git prompt utility
-- `gitprompt/` - Source for gitprompt
