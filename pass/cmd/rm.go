@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/mandu/tools/pass/cmd/tui"
 	"github.com/mandu/tools/pass/pkg/filesystem"
 	"github.com/mandu/tools/pass/pkg/git"
 	"github.com/mandu/tools/pass/pkg/gpg"
@@ -124,23 +125,19 @@ func removePassword(path string, noCommit, clip bool) error {
 // runRmFuzzySearch enters interactive fuzzy search mode for removing a password.
 // When user selects a password, it will be removed.
 func runRmFuzzySearch(noCommit, clip bool) error {
-	// If clip flag is set, we need special handling
-	// Since fuzzy search for rm with clip needs to copy before deleting
+	// Use the new TUI for fuzzy search
+	selected, err := tui.RunInteractiveFuzzySearch(tui.FuzzyModeRm)
+	if err != nil {
+		return err
+	}
+	if selected == "" {
+		return nil
+	}
+	
+	fullPath := getRmFullPath(selected)
+	
+	// If clip flag is set, copy to clipboard first
 	if clip {
-		// For clip mode in rm, we'll handle it in the RunInteractiveFuzzySearch
-		// by passing a special mode or handling it separately
-		// For now, we'll use a simple approach: do fuzzy search, then copy and delete
-		selected, err := InteractiveFuzzySearch(FuzzyModeShow)
-		if err != nil {
-			return err
-		}
-		if selected == "" {
-			return nil
-		}
-		// Get the full path
-		fullPath := getRmFullPath(selected)
-		
-		// Copy to clipboard first
 		password, err := gpg.DecryptFile(fullPath)
 		if err != nil {
 			return err
@@ -150,21 +147,9 @@ func runRmFuzzySearch(noCommit, clip bool) error {
 		}
 		fmt.Printf("Copied %s to clipboard.\n", selected)
 		go filesystem.StartClipboardClearTimer()
-		
-		// Now remove it
-		return removePasswordInternal(fullPath, selected, noCommit)
 	}
 	
-	// Normal rm without clip
-	selected, err := InteractiveFuzzySearch(FuzzyModeRm)
-	if err != nil {
-		return err
-	}
-	if selected == "" {
-		return nil
-	}
-	
-	fullPath := getRmFullPath(selected)
+	// Remove the password
 	return removePasswordInternal(fullPath, selected, noCommit)
 }
 

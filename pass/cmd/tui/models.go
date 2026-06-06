@@ -9,8 +9,6 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbletea"
-
-	"github.com/mandu/tools/pass/cmd"
 )
 
 // item represents a password entry in the list
@@ -177,8 +175,8 @@ type Model struct {
 	// Search input
 	input textinput.Model
 	
-	// Current mode (using the cmd package type)
-	mode cmd.FuzzySearchMode
+	// Current mode
+	mode FuzzySearchMode
 	
 	// All passwords (for filtering)
 	allPasswords []string
@@ -193,13 +191,13 @@ type Model struct {
 }
 
 // getTitle returns the title for the given mode
-func getTitle(mode cmd.FuzzySearchMode) string {
+func getTitle(mode FuzzySearchMode) string {
 	switch mode {
-	case cmd.FuzzyModeShow:
+	case FuzzyModeShow:
 		return "Select password (Enter to show, Esc to cancel)"
-	case cmd.FuzzyModeClip:
+	case FuzzyModeClip:
 		return "Select password to copy (Enter to copy, Esc to cancel)"
-	case cmd.FuzzyModeRm:
+	case FuzzyModeRm:
 		return "Select password to remove (Enter to delete, Esc to cancel)"
 	default:
 		return "Select password"
@@ -207,13 +205,13 @@ func getTitle(mode cmd.FuzzySearchMode) string {
 }
 
 // getPrompt returns the prompt for the given mode
-func getPrompt(mode cmd.FuzzySearchMode) string {
+func getPrompt(mode FuzzySearchMode) string {
 	switch mode {
-	case cmd.FuzzyModeShow:
+	case FuzzyModeShow:
 		return "Search: "
-	case cmd.FuzzyModeClip:
+	case FuzzyModeClip:
 		return "Copy: "
-	case cmd.FuzzyModeRm:
+	case FuzzyModeRm:
 		return "Remove: "
 	default:
 		return "Search: "
@@ -374,7 +372,7 @@ func recreateInput(old textinput.Model, width int) textinput.Model {
 }
 
 // NewModel creates a new fuzzy search model
-func NewModel(passwords []string, mode cmd.FuzzySearchMode) *Model {
+func NewModel(passwords []string, mode FuzzySearchMode) *Model {
 	// Create input
 	input := textinput.New()
 	input.Placeholder = "Type to search..."

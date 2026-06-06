@@ -9,9 +9,31 @@ import (
 	"github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/mandu/tools/pass/cmd"
 	"github.com/mandu/tools/pass/pkg/filesystem"
 )
+
+// FuzzySearchMode represents the mode of fuzzy search (show, clip, rm)
+type FuzzySearchMode int
+
+const (
+	// FuzzyModeShow - show the selected password
+	FuzzyModeShow FuzzySearchMode = iota
+	// FuzzyModeClip - copy the selected password to clipboard
+	FuzzyModeClip
+	// FuzzyModeRm - delete the selected password
+	FuzzyModeRm
+)
+
+// getPasswordStoreDir returns the password store directory path
+func getPasswordStoreDir() string {
+	dir := os.Getenv("PASSWORD_STORE_DIR")
+	if dir != "" {
+		return dir
+	}
+	// Default to %USERPROFILE%\.password-store on Windows
+	// or ~/.password-store on Unix
+	return fmt.Sprintf("%s/.password-store", os.Getenv("USERPROFILE"))
+}
 
 // styles for the TUI
 var (
@@ -57,7 +79,7 @@ var (
 )
 
 // RunFuzzySearch runs the fuzzy search TUI and returns the selected password
-func RunFuzzySearch(passwords []string, mode cmd.FuzzySearchMode) (string, error) {
+func RunFuzzySearch(passwords []string, mode FuzzySearchMode) (string, error) {
 	// Create the model
 	model := NewModel(passwords, mode)
 	
@@ -125,12 +147,12 @@ func CollectAllPasswords(storeDir string) ([]string, error) {
 
 // GetPasswordStoreDir returns the password store directory path
 func GetPasswordStoreDir() string {
-	return cmd.GetPasswordStoreDir()
+	return getPasswordStoreDir()
 }
 
 // RunInteractiveFuzzySearch runs interactive search and returns the selected password path
 // This is the main entry point for the TUI from the existing code
-func RunInteractiveFuzzySearch(mode cmd.FuzzySearchMode) (string, error) {
+func RunInteractiveFuzzySearch(mode FuzzySearchMode) (string, error) {
 	storeDir := GetPasswordStoreDir()
 	
 	// Check if store exists
