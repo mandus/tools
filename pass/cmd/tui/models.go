@@ -325,11 +325,18 @@ func (m *Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 		
-	// Navigation keys - pass to list
-	case msg.String() == "up" || msg.String() == "down" || msg.String() == "left" || msg.String() == "right" || msg.String() == "pageup" || msg.String() == "pagedown":
-		// Pass navigation keys to the list
+	// List navigation keys - pass to list
+	case msg.String() == "up" || msg.String() == "down" || msg.String() == "pageup" || msg.String() == "pagedown":
+		// Pass vertical navigation keys to the list
 		var cmd tea.Cmd
 		m.list, cmd = m.list.Update(msg)
+		return m, cmd
+		
+	// Input cursor keys - pass to input field
+	case msg.String() == "left" || msg.String() == "right" || msg.String() == "home" || msg.String() == "end":
+		// Pass cursor movement keys to the input field
+		var cmd tea.Cmd
+		m.input, cmd = m.input.Update(msg)
 		return m, cmd
 		
 	// Handle input for search
