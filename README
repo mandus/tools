@@ -43,6 +43,9 @@ pass find gmail            # Search
 pass email/gmail.com/user  # Show password
 pass -c email/...          # Copy to clipboard
 pass insert email/...      # Add new password
+pass                       # Interactive fuzzy search TUI
+pass -c                   # Interactive fuzzy search with clipboard copy
+pass rm                   # Interactive fuzzy search to remove
 ```
 
 ### Prerequisites

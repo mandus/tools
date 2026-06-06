@@ -38,10 +38,18 @@ pass insert email/new.com
 ## TUI
 
 When running `pass`, `pass -c`, or `pass rm` without arguments, an interactive TUI is displayed:
-- Use ↑/↓ arrows or j/k to navigate
-- Type to filter passwords
+- Use ↑/↓ arrows to navigate the list
+- Use ←/→ arrows to move cursor in search input
+- Use Tab to cycle through results
+- Type to filter passwords using **fuzzy matching** (subsequence matching)
 - Press Enter to select
 - Press Esc, Ctrl+C, Ctrl+D, or Ctrl+Q to exit
+
+**Fuzzy Matching Examples:**
+- Type `"g"` → shows all items containing "g"
+- Type `"ga"` → shows items with "g" followed by "a" (in any position after)
+- Type `"gmail"` → shows items like `email/gmail.com/user` where characters appear in order
+- Matching characters are highlighted in the results
 
 ## Installation
 

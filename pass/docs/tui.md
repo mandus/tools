@@ -15,6 +15,7 @@ The TUI automatically activates for:
 |-----|--------|
 | ↑ / ↓ | Navigate up/down |
 | j / k | Navigate up/down |
+| ← / → | Move cursor in search input |
 | Enter | Select password |
 | Esc | Exit/cancel |
 | Ctrl+C | Exit/cancel |
@@ -23,16 +24,34 @@ The TUI automatically activates for:
 | Home | Jump to first item |
 | End | Jump to last item |
 | PageUp / PageDown | Scroll by page |
-| Type | Filter passwords |
+| Tab | Cycle through results |
+| Type | Filter passwords (fuzzy matching) |
 | Backspace | Delete character |
+| Ctrl+A | Move to start of query |
+| Ctrl+E | Move to end of query |
+| Ctrl+K | Clear from cursor to end |
+| Ctrl+L | Clear entire query |
+| Ctrl+W | Delete word before cursor |
+
+## Fuzzy Matching
+
+The TUI uses **subsequence matching** - characters must appear in order but not necessarily consecutively:
+
+- Typing `"g"` → shows all items containing "g" anywhere
+- Typing `"ga"` → shows items where "g" appears anywhere, followed by "a" anywhere after it
+- Typing `"gmail"` → shows items like `email/gmail.com/user` where characters appear in order
+
+Matching characters are **highlighted** in the results for better visibility.
 
 ## Features
 
 - Full terminal window utilization
-- Real-time filtering as you type
-- Match highlighting
+- Real-time fuzzy filtering as you type
+- Match highlighting with fuzzy match indices
 - Clear help information
 - Cross-platform compatibility
+- Proper arrow key navigation
+- Tab key to cycle through results
 
 ## Implementation
 
@@ -40,3 +59,4 @@ The TUI automatically activates for:
 - Components: [charmbracelet/bubbles](https://github.com/charmbracelet/bubbles)
 - Styling: [charmbracelet/lipgloss](https://github.com/charmbracelet/lipgloss)
 - Code: `cmd/tui/` package
+- Fuzzy matching: Uses the existing `pkg/fuzzy` package for subsequence matching

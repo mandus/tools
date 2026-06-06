@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbletea"
+	"github.com/mandu/tools/pass/pkg/fuzzy"
 )
 
 // item represents a password entry in the list
@@ -219,12 +220,12 @@ func getPrompt(mode FuzzySearchMode) string {
 }
 
 // Init initializes the model
-func (m Model) Init() tea.Cmd {
+func (m *Model) Init() tea.Cmd {
 	return textinput.Blink
 }
 
 // Update handles messages and updates the model
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	
 	switch msg := msg.(type) {
@@ -265,7 +266,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // View renders the current state
-func (m Model) View() string {
+func (m *Model) View() string {
 	if m.quitting {
 		return ""
 	}
@@ -298,7 +299,7 @@ func (m Model) View() string {
 }
 
 // handleKeyMsg handles keyboard messages
-func (m Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m *Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch {
 	// Exit keys
 	case msg.String() == "esc" || msg.String() == "ctrl+c" || msg.String() == "ctrl+d" || msg.String() == "ctrl+q":
@@ -315,6 +316,22 @@ func (m Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 		
+	// Tab - cycle through results
+	case msg.String() == "tab":
+		// Cycle to next item in the list
+		if len(m.list.Items()) > 1 {
+			nextIdx := (m.list.Index() + 1) % len(m.list.Items())
+			m.list.Select(nextIdx)
+		}
+		return m, nil
+		
+	// Navigation keys - pass to list
+	case msg.String() == "up" || msg.String() == "down" || msg.String() == "left" || msg.String() == "right" || msg.String() == "pageup" || msg.String() == "pagedown":
+		// Pass navigation keys to the list
+		var cmd tea.Cmd
+		m.list, cmd = m.list.Update(msg)
+		return m, cmd
+		
 	// Handle input for search
 	default:
 		// Update the input
@@ -328,24 +345,27 @@ func (m Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 }
 
-// filterList filters the list based on the current input value
+// filterList filters the list based on the current input value using fuzzy matching
 func (m *Model) filterList() {
 	query := m.input.Value()
 	
-	// Use simple filtering for now
+	// Use fuzzy matching
 	var filtered []list.Item
-	for _, path := range m.allPasswords {
-		// Simple case-insensitive contains for now
-		if strings.Contains(strings.ToLower(path), strings.ToLower(query)) {
-			filtered = append(filtered, item{path: path})
-		}
-	}
-	
-	// If query is empty, show all passwords
 	if query == "" {
+		// Empty query: show all passwords
 		filtered = make([]list.Item, len(m.allPasswords))
 		for i, path := range m.allPasswords {
 			filtered[i] = item{path: path}
+		}
+	} else {
+		// Filter using fuzzy matching
+		results := fuzzy.Filter(query, m.allPasswords)
+		filtered = make([]list.Item, len(results))
+		for i, result := range results {
+			filtered[i] = item{
+				path:         result.Path,
+				matchIndices: result.MatchIndices,
+			}
 		}
 	}
 	

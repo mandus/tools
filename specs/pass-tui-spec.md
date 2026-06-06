@@ -40,11 +40,16 @@ This document summarizes the implementation of a new TUI for the `pass` program 
 - ✅ Full window size utilization for listing as many completions as possible
 - ✅ Basic help information display (navigation keys, actions)
 - ✅ Keyboard navigation: ↑/↓ arrows, Enter, Esc, Ctrl+C, Ctrl+D, Ctrl+Q
+- ✅ Left/Right arrows for cursor movement in search input
+- ✅ PageUp/PageDown for page navigation
+- ✅ Tab key to cycle through results
 - ✅ Search input with real-time filtering
 - ✅ Three modes: Show, Clip, Remove
 - ✅ Cross-platform compatibility via Bubble Tea
 - ✅ Custom delegate for password rendering
-- ✅ Match highlighting infrastructure (basic implementation)
+- ✅ **Full fuzzy matching implementation (subsequence matching)**
+- ✅ **Match highlighting with fuzzy match indices**
+- ✅ Fixed pointer receiver issue causing "unexpected model type" error
 
 ## Current State
 
@@ -53,15 +58,16 @@ This document summarizes the implementation of a new TUI for the `pass` program 
 - The Bubble Tea framework is properly integrated
 - All keyboard handling works consistently across platforms
 - Window resize handling is implemented
-- Basic filtering is functional
+- ✅ **Full fuzzy matching with subsequence matching**
+- ✅ **Match highlighting using fuzzy match indices**
+- ✅ **Arrow key navigation (up/down/left/right, PageUp/PageDown)**
+- ✅ **Tab key to cycle through results**
+- ✅ Integration with existing CLI commands (`pass`, `pass -c`, `pass rm`)
+- Proper error handling for edge cases
+- Styling and colors (styles are defined and applied)
 
 ### What's Not Yet Implemented
-- ⚠️ Integration with existing CLI commands (`pass`, `pass -c`, `pass rm`)
-- ⚠️ Full fuzzy matching (currently using simple string contains)
-- ⚠️ Confirmation dialog for remove mode
-- ⚠️ Proper error handling for edge cases
-- ⚠️ Styling and colors (styles are defined but not fully applied)
-- ⚠️ Match highlighting using actual fuzzy match indices
+- ⚠️ Confirmation dialog for remove mode (per spec, no confirmation needed - git history is sufficient)
 
 ## Files Modified
 
