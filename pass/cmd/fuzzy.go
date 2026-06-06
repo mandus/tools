@@ -40,7 +40,11 @@ type FuzzySearchState struct {
 }
 
 func newFuzzySearchState(passwords []string, mode FuzzySearchMode) *FuzzySearchState {
-	w, h, _ := terminal.GetSize()
+	w, h, err := terminal.GetSize()
+	if err != nil || w <= 0 || h <= 0 {
+		// Fallback for non-terminal or error
+		w, h = 80, 24
+	}
 	listHeight := h - 2
 	if listHeight < 1 {
 		listHeight = 1
@@ -96,7 +100,7 @@ func (s *FuzzySearchState) scrollToItem(idx int) {
 
 func (s *FuzzySearchState) handleKey(key terminal.Key) (bool, string, error) {
 	// Exit keys
-	if key.IsEscape || (key.IsCtrl && key.CtrlChar == 'C') || (key.IsCtrl && key.CtrlChar == 'D') {
+	if key.IsEscape || (key.IsCtrl && key.CtrlChar == 'C') || (key.IsCtrl && key.CtrlChar == 'D') || (key.IsCtrl && key.CtrlChar == 'Q') {
 		return false, "", nil
 	}
 
@@ -319,7 +323,8 @@ func InteractiveFuzzySearch(mode FuzzySearchMode) (string, error) {
 	defer keyReader.Close()
 
 	if err := keyReader.EnableRawMode(); err != nil {
-		fmt.Fprintf(os.Stderr, "warning: raw mode not available: %v\n", err)
+		keyReader.Close()
+		return "", fmt.Errorf("pass: raw mode not available: %v", err)
 	}
 
 	if terminal.SupportsANSI() {

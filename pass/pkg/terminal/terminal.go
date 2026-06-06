@@ -238,12 +238,10 @@ func (kr *KeyReader) ReadKey() (Key, error) {
 	// Handle Escape sequences (ANSI)
 	if b == 27 {
 		// Check if this is a standalone Escape or the start of a sequence
-		// We need to check the next bytes to determine
-		if err := kr.reader.UnreadByte(); err != nil {
+		// Use Buffered() to check if there are bytes available without blocking
+		if kr.reader.Buffered() == 0 {
 			return Key{IsEscape: true}, nil
 		}
-
-		// Peek the next bytes
 		next1, err := kr.reader.ReadByte()
 		if err != nil {
 			return Key{IsEscape: true}, nil
@@ -365,7 +363,8 @@ func (kr *KeyReader) ReadKey() (Key, error) {
 	}
 
 	// Handle Ctrl+key combinations (Ctrl+A = 1, Ctrl+B = 2, etc.)
-	if b >= 1 && b <= 26 {
+	// Note: Line feed (10) and carriage return (13) are excluded as they should be treated as Enter
+	if b >= 1 && b <= 26 && b != 10 && b != 13 {
 		// Ctrl+A is 1, Ctrl+B is 2, ..., Ctrl+Z is 26
 		return Key{IsCtrl: true, CtrlChar: rune('A' + int(b) - 1), Rune: rune(b)}, nil
 	}
@@ -390,7 +389,7 @@ func (kr *KeyReader) ReadKey() (Key, error) {
 
 	// Handle special keys
 	switch b {
-	case 13:
+	case 13, 10:
 		return Key{IsEnter: true, Rune: '\n'}, nil
 	case 8, 127:
 		return Key{IsBackspace: true, Rune: 8}, nil
