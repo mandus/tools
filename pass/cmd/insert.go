@@ -20,6 +20,8 @@ var insertCmd = &cobra.Command{
 	Short: "Insert a new password",
 	Long:  `Insert a new password at the given path. Prompts for password twice for verification.`,
 	Args:  cobra.ExactArgs(1),
+	SilenceUsage: true,
+	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		path := args[0]
 		return insertPassword(path)
@@ -48,9 +50,21 @@ func insertPassword(path string) error {
 	if !strings.HasSuffix(filePath, ".gpg") {
 		filePath += ".gpg"
 	}
-	fullPath := filepath.Join(storeDir, filePath)
 	
-	// Check if file already exists BEFORE prompting for password
+	// Try multiple path strategies for cross-platform compatibility
+	// Strategy 1: Use filepath.Join with FromSlash
+	fullPath := filepath.Join(storeDir, filepath.FromSlash(filePath))
+	
+	// Check if file exists with strategy 1
+	if _, err := os.Stat(fullPath); err == nil {
+		return fmt.Errorf("pass: %s: Already exists", path)
+	}
+	
+	// Strategy 2: Try with forward slashes directly
+	storeDirForward := strings.ReplaceAll(storeDir, "\\", "/")
+	fullPath = storeDirForward + "/" + filePath
+	
+	// Check if file exists with strategy 2
 	if _, err := os.Stat(fullPath); err == nil {
 		return fmt.Errorf("pass: %s: Already exists", path)
 	}
