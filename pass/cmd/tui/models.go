@@ -200,6 +200,8 @@ func getTitle(mode FuzzySearchMode) string {
 		return "Select password to copy (Enter to copy, Esc to cancel)"
 	case FuzzyModeRm:
 		return "Select password to remove (Enter to delete, Esc to cancel)"
+	case FuzzyModeEdit:
+		return "Select password to edit (Enter to edit, Esc to cancel)"
 	default:
 		return "Select password"
 	}
@@ -214,6 +216,8 @@ func getPrompt(mode FuzzySearchMode) string {
 		return "Copy: "
 	case FuzzyModeRm:
 		return "Remove: "
+	case FuzzyModeEdit:
+		return "Edit: "
 	default:
 		return "Search: "
 	}

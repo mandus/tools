@@ -61,6 +61,11 @@ func insertPassword(path string) error {
 	}
 	fullPath := filepath.Join(storeDir, filePath)
 	
+	// Check if file already exists
+	if _, err := os.Stat(fullPath); err == nil {
+		return fmt.Errorf("pass: %s: Already exists", path)
+	}
+	
 	// Create parent directories
 	if err := os.MkdirAll(filepath.Dir(fullPath), 0700); err != nil {
 		return fmt.Errorf("pass: failed to create directory: %v", err)
