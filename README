@@ -1,1 +1,57 @@
-Some simple tools for my own productivity
+# Tools
+
+Some simple tools for my own productivity.
+
+---
+
+## pass - Password Store Replacement
+
+Windows-compatible `pass` (password-store) replacement in Go.
+
+### Build
+```bash
+cd pass
+go build -o pass.exe .  # Windows
+go build -o pass .     # Linux/macOS
+```
+
+### Install
+```bash
+# Windows: copy pass.exe to PATH
+copy pass\pass.exe C:\Windows\System32\
+
+# Linux/macOS:
+sudo cp pass/pass /usr/local/bin/
+```
+
+### Test
+```bash
+# Run tests
+cd pass
+go test ./...
+
+# Manual test
+./pass.exe ls
+./pass.exe find gmail
+./pass.exe insert test/password
+```
+
+### Usage
+```bash
+pass ls                    # List passwords
+pass find gmail            # Search
+pass email/gmail.com/user  # Show password
+pass -c email/...          # Copy to clipboard
+pass insert email/...      # Add new password
+```
+
+### Prerequisites
+- Go 1.20+
+- GnuPG (GPG4Win on Windows)
+- Git (optional, for version control)
+
+---
+
+## Other Tools
+
+- `shell/gitprompt.exe` - Git prompt utility
