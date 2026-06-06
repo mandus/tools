@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/mandu/tools/pass/cmd/tui"
 	"github.com/spf13/cobra"
 )
 
@@ -47,11 +48,25 @@ Examples:
 			if clipFlagChanged {
 				// Set global clip flag
 				clipFlag = true
-				// Enter fuzzy search mode with clip
-				return RunInteractiveFuzzySearch(FuzzyModeClip)
+				// Enter fuzzy search mode with clip using new TUI
+				selected, err := tui.RunInteractiveFuzzySearch(tui.FuzzyModeClip)
+				if err != nil {
+					return err
+				}
+				if selected != "" {
+					return showPassword(selected)
+				}
+				return nil
 			}
-			// Enter fuzzy search mode (default: show)
-			return RunInteractiveFuzzySearch(FuzzyModeShow)
+			// Enter fuzzy search mode (default: show) using new TUI
+			selected, err := tui.RunInteractiveFuzzySearch(tui.FuzzyModeShow)
+			if err != nil {
+				return err
+			}
+			if selected != "" {
+				return showPassword(selected)
+			}
+			return nil
 		}
 		// If args provided without explicit command, treat as show command
 		return showPassword(args[0])

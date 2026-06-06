@@ -13,25 +13,25 @@ Both features are designed to match the behavior of Unix fzf (fuzzy finder) and 
 ## User Requirements
 
 ### Must Have
-- [ ] Invoke `pass` without arguments to enter fuzzy search mode
-- [ ] Real-time filtering as user types
-- [ ] Fuzzy matching: characters must appear in order but not consecutively
-- [ ] Best match auto-selected
-- [ ] Matching characters visually highlighted
-- [ ] Navigation: arrow keys, Enter, Esc, Ctrl+C
-- [ ] Additional keybindings: Ctrl+A (move to start), Ctrl+K (clear from cursor to end), Ctrl+E (move to end)
-- [ ] Press Enter on selection to show the password (or delete if invoked via `pass rm`)
-- [ ] `pass rm <path>` removes the secret file
-- [ ] `pass rm` without arguments enters fuzzy search mode, then deletes on Enter
-- [ ] `pass rm` auto-commits removal to git with message "Remove <path>"
-- [ ] No confirmation prompts for `rm` (git history is sufficient)
+- [x] Invoke `pass` without arguments to enter fuzzy search mode
+- [x] Real-time filtering as user types
+- [x] Fuzzy matching: characters must appear in order but not consecutively
+- [x] Best match auto-selected
+- [x] Matching characters visually highlighted
+- [x] Navigation: arrow keys, Enter, Esc, Ctrl+C
+- [x] Additional keybindings: Ctrl+A (move to start), Ctrl+K (clear from cursor to end), Ctrl+E (move to end)
+- [x] Press Enter on selection to show the password (or delete if invoked via `pass rm`)
+- [x] `pass rm <path>` removes the secret file
+- [x] `pass rm` without arguments enters fuzzy search mode, then deletes on Enter
+- [x] `pass rm` auto-commits removal to git with message "Remove <path>"
+- [x] No confirmation prompts for `rm` (git history is sufficient)
 
 ### Should Have
-- [ ] Respect `.gitignore` - only show tracked/valid password files
-- [ ] Case-insensitive matching by default
-- [ ] Show match quality/ranking indicators
-- [ ] Support `--no-commit` flag for `rm` to skip git
-- [ ] Handle errors gracefully with clear messages
+- [x] Respect `.gitignore` - only show tracked/valid password files (skips .git/ directory)
+- [x] Case-insensitive matching by default
+- [x] Show match quality/ranking indicators (sorted by score)
+- [x] Support `--no-commit` flag for `rm` to skip git
+- [x] Handle errors gracefully with clear messages
 
 ### Nice to Have (Future)
 - [ ] Preview pane showing first line of matched secret
