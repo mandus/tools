@@ -42,6 +42,19 @@ func addInsertCmd() {
 
 // insertPassword inserts a new password
 func insertPassword(path string) error {
+	// Normalize path and create file path
+	storeDir := GetPasswordStoreDir()
+	filePath := filesystem.NormalizePath(path)
+	if !strings.HasSuffix(filePath, ".gpg") {
+		filePath += ".gpg"
+	}
+	fullPath := filepath.Join(storeDir, filePath)
+	
+	// Check if file already exists BEFORE prompting for password
+	if _, err := os.Stat(fullPath); err == nil {
+		return fmt.Errorf("pass: %s: Already exists", path)
+	}
+	
 	// Get password from user
 	password, err := promptForPassword(path)
 	if err != nil {
@@ -51,19 +64,6 @@ func insertPassword(path string) error {
 	// Validate password is not empty
 	if password == "" {
 		return fmt.Errorf("pass: password cannot be empty")
-	}
-	
-	// Normalize path and create file path
-	storeDir := GetPasswordStoreDir()
-	filePath := filesystem.NormalizePath(path)
-	if !strings.HasSuffix(filePath, ".gpg") {
-		filePath += ".gpg"
-	}
-	fullPath := filepath.Join(storeDir, filePath)
-	
-	// Check if file already exists
-	if _, err := os.Stat(fullPath); err == nil {
-		return fmt.Errorf("pass: %s: Already exists", path)
 	}
 	
 	// Create parent directories
