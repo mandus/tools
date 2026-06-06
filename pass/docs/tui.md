@@ -13,9 +13,10 @@ The TUI automatically activates for:
 
 | Key | Action |
 |-----|--------|
-| ↑ / ↓ | Navigate up/down |
-| j / k | Navigate up/down |
+| ↑ / ↓ | Navigate list up/down |
+| j / k | Navigate list up/down |
 | ← / → | Move cursor in search input |
+| Home / End | Move cursor to start/end of search input |
 | Enter | Select password |
 | Esc | Exit/cancel |
 | Ctrl+C | Exit/cancel |
