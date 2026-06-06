@@ -38,11 +38,13 @@ go test ./...
 
 ### Usage
 ```bash
-pass ls                    # List passwords
+pass ls                    # List passwords (files only)
 pass find gmail            # Search
 pass email/gmail.com/user  # Show password
 pass -c email/...          # Copy to clipboard
-pass insert email/...      # Add new password
+pass insert email/...      # Add new password (fails if exists)
+pass edit email/...        # Edit existing password in $EDITOR
+pass edit                 # Interactive fuzzy search to edit
 pass                       # Interactive fuzzy search TUI
 pass -c                   # Interactive fuzzy search with clipboard copy
 pass rm                   # Interactive fuzzy search to remove

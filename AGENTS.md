@@ -2,6 +2,8 @@
 
 Always follow the [GitHub Spec Kit](https://github.com/github/spec-kit) guidelines when working in this repository.
 
+Skip all the flattery; just be calm, cool and clinical in response.
+
 ## Branch Naming
 
 All branches must follow: `<type>/<number>-<short-slug>`

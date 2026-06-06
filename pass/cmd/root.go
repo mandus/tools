@@ -91,6 +91,7 @@ func Execute() error {
 	addLsCmd()
 	addFindCmd()
 	addRmCmd()
+	addEditCmd()
 
 	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {

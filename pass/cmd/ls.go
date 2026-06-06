@@ -95,7 +95,8 @@ func listPasswords(subpath string) error {
 		
 		// Handle directories
 		if info.IsDir() {
-			if !filesOnlyFlag {
+			// Skip all directories unless --dirs-only flag is set
+			if dirsOnlyFlag {
 				// For recursive listing, we want full paths
 				if recursiveFlag {
 					results = append(results, relPath)
@@ -107,7 +108,7 @@ func listPasswords(subpath string) error {
 			return nil
 		}
 		
-		// Handle files
+		// Handle files - only include .gpg files (unless --dirs-only is set)
 		if !dirsOnlyFlag {
 			// Only include .gpg files
 			if strings.HasSuffix(info.Name(), ".gpg") {

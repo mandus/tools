@@ -22,6 +22,8 @@ const (
 	FuzzyModeClip
 	// FuzzyModeRm - delete the selected password
 	FuzzyModeRm
+	// FuzzyModeEdit - edit the selected password
+	FuzzyModeEdit
 )
 
 // FuzzySearchState holds the state of the fuzzy search UI
@@ -249,6 +251,8 @@ func (s *FuzzySearchState) getPrompt() string {
 		return "Copy: "
 	case FuzzyModeRm:
 		return "Remove: "
+	case FuzzyModeEdit:
+		return "Edit: "
 	default:
 		return "Search: "
 	}
@@ -264,6 +268,8 @@ func (s *FuzzySearchState) render() {
 		header = "Select password to copy (Enter to copy, Esc to cancel):"
 	case FuzzyModeRm:
 		header = "Select password to remove (Enter to delete, Esc to cancel):"
+	case FuzzyModeEdit:
+		header = "Select password to edit (Enter to edit, Esc to cancel):"
 	default:
 		header = "Select password (Enter to show, Esc to cancel):"
 	}
@@ -383,6 +389,8 @@ func RunInteractiveFuzzySearch(mode FuzzySearchMode) error {
 		return nil
 	case FuzzyModeRm:
 		return removePassword(selected, false, false)
+	case FuzzyModeEdit:
+		return editPassword(selected, false)
 	}
 	return nil
 }

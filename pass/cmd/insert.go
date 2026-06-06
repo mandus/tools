@@ -20,6 +20,8 @@ var insertCmd = &cobra.Command{
 	Short: "Insert a new password",
 	Long:  `Insert a new password at the given path. Prompts for password twice for verification.`,
 	Args:  cobra.ExactArgs(1),
+	SilenceUsage: true,
+	SilenceErrors: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		path := args[0]
 		return insertPassword(path)
@@ -42,6 +44,31 @@ func addInsertCmd() {
 
 // insertPassword inserts a new password
 func insertPassword(path string) error {
+	// Normalize path and create file path
+	storeDir := GetPasswordStoreDir()
+	filePath := filesystem.NormalizePath(path)
+	if !strings.HasSuffix(filePath, ".gpg") {
+		filePath += ".gpg"
+	}
+	
+	// Try multiple path strategies for cross-platform compatibility
+	// Strategy 1: Use filepath.Join with FromSlash
+	fullPath := filepath.Join(storeDir, filepath.FromSlash(filePath))
+	
+	// Check if file exists with strategy 1
+	if _, err := os.Stat(fullPath); err == nil {
+		return fmt.Errorf("pass: %s: Already exists", path)
+	}
+	
+	// Strategy 2: Try with forward slashes directly
+	storeDirForward := strings.ReplaceAll(storeDir, "\\", "/")
+	fullPath = storeDirForward + "/" + filePath
+	
+	// Check if file exists with strategy 2
+	if _, err := os.Stat(fullPath); err == nil {
+		return fmt.Errorf("pass: %s: Already exists", path)
+	}
+	
 	// Get password from user
 	password, err := promptForPassword(path)
 	if err != nil {
@@ -52,14 +79,6 @@ func insertPassword(path string) error {
 	if password == "" {
 		return fmt.Errorf("pass: password cannot be empty")
 	}
-	
-	// Normalize path and create file path
-	storeDir := GetPasswordStoreDir()
-	filePath := filesystem.NormalizePath(path)
-	if !strings.HasSuffix(filePath, ".gpg") {
-		filePath += ".gpg"
-	}
-	fullPath := filepath.Join(storeDir, filePath)
 	
 	// Create parent directories
 	if err := os.MkdirAll(filepath.Dir(fullPath), 0700); err != nil {

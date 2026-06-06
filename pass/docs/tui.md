@@ -8,12 +8,14 @@ The TUI automatically activates for:
 - `pass` (no arguments) - Show mode
 - `pass -c` (no arguments) - Clip mode  
 - `pass rm` (no arguments) - Remove mode
+- `pass edit` (no arguments) - Edit mode
 
 ## Keyboard Controls
 
 | Key | Action |
 |-----|--------|
 | ↑ / ↓ | Navigate list up/down |
+| Enter | Select password (action depends on mode: show, copy, remove, or edit) |
 | j / k | Navigate list up/down |
 | ← / → | Move cursor in search input |
 | Home / End | Move cursor to start/end of search input |
@@ -33,6 +35,17 @@ The TUI automatically activates for:
 | Ctrl+K | Clear from cursor to end |
 | Ctrl+L | Clear entire query |
 | Ctrl+W | Delete word before cursor |
+
+## Modes
+
+The TUI operates in different modes depending on how it was invoked:
+
+| Mode | Invocation | Action on Enter |
+|------|------------|----------------|
+| Show | `pass` | Show the selected password |
+| Clip | `pass -c` | Copy selected password to clipboard |
+| Remove | `pass rm` | Delete the selected password |
+| Edit | `pass edit` | Edit the selected password in $EDITOR |
 
 ## Fuzzy Matching
 

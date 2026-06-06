@@ -22,6 +22,8 @@ const (
 	FuzzyModeClip
 	// FuzzyModeRm - delete the selected password
 	FuzzyModeRm
+	// FuzzyModeEdit - edit the selected password
+	FuzzyModeEdit
 )
 
 // getPasswordStoreDir returns the password store directory path
