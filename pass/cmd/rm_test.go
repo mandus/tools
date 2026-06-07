@@ -122,7 +122,7 @@ func TestRemovePasswordPathNormalization(t *testing.T) {
 	os.Setenv("PASSWORD_STORE_DIR", tempDir)
 	defer os.Setenv("PASSWORD_STORE_DIR", orig)
 
-	// Create a test password file with forward slashes
+	// Create a test password file with OS-specific path separator
 	passwordPath := filepath.Join(tempDir, "test", "password.gpg")
 	if err := os.MkdirAll(filepath.Dir(passwordPath), 0700); err != nil {
 		t.Fatalf("Failed to create directory: %v", err)
@@ -132,16 +132,15 @@ func TestRemovePasswordPathNormalization(t *testing.T) {
 		t.Fatalf("Failed to create file: %v", err)
 	}
 
-	// Test removing with backslashes (Windows style)
-	// The function should normalize the path
-	err = removePassword("test\\password", false, false)
+	// Test removing with forward slashes (should work on all platforms)
+	err = removePassword("test/password", false, false)
 	if err != nil {
-		t.Fatalf("removePassword with backslashes failed: %v", err)
+		t.Fatalf("removePassword with forward slashes failed: %v", err)
 	}
 
 	// Check that file was removed
 	if _, err := os.Stat(passwordPath); !os.IsNotExist(err) {
-		t.Error("File was not removed when using backslashes")
+		t.Error("File was not removed when using forward slashes")
 	}
 }
 

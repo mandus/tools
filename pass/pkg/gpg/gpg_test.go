@@ -4,6 +4,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/mandu/tools/pass/internal/testhelper"
 )
 
 func TestCheckGPG(t *testing.T) {
@@ -17,37 +19,53 @@ func TestCheckGPG(t *testing.T) {
 }
 
 func TestHasSecretKey(t *testing.T) {
-	// Skip if GPG not available
-	if err := CheckGPG(); err != nil {
-		t.Skipf("GPG not available: %v", err)
+	// Set up test environment with GPG keys
+	env, noPassKey, _, err := testhelper.SetupTestEnvWithGPGKeys()
+	if err != nil {
+		t.Skipf("Failed to set up test environment: %v", err)
 	}
+	defer env.Cleanup()
+
+	// Set GNUPGHOME for this test
+	os.Setenv("GNUPGHOME", env.GNUPGHome)
+	os.Setenv("PASS_GPG_ID", noPassKey)
 
 	hasKey := HasSecretKey()
-	t.Logf("HasSecretKey: %v", hasKey)
-	// Don't fail, just log - this depends on user's GPG setup
+	if !hasKey {
+		t.Error("Expected to have secret key in test environment")
+	}
 }
 
 func TestGetDefaultRecipient(t *testing.T) {
-	// Skip if GPG not available
-	if err := CheckGPG(); err != nil {
-		t.Skipf("GPG not available: %v", err)
+	// Set up test environment with GPG keys
+	env, noPassKey, _, err := testhelper.SetupTestEnvWithGPGKeys()
+	if err != nil {
+		t.Skipf("Failed to set up test environment: %v", err)
 	}
+	defer env.Cleanup()
+
+	// Set GNUPGHOME for this test
+	os.Setenv("GNUPGHOME", env.GNUPGHome)
+	os.Setenv("PASS_GPG_ID", noPassKey)
 
 	recipient := GetDefaultRecipient()
+	if recipient == "" {
+		t.Error("Expected to get a default recipient in test environment")
+	}
 	t.Logf("Default GPG recipient: %s", recipient)
-	// Don't fail, just log
 }
 
 func TestEncryptDecryptRoundTrip(t *testing.T) {
-	// Skip if GPG not available
-	if err := CheckGPG(); err != nil {
-		t.Skipf("GPG not available: %v", err)
+	// Set up test environment with GPG keys
+	env, noPassKey, _, err := testhelper.SetupTestEnvWithGPGKeys()
+	if err != nil {
+		t.Skipf("Failed to set up test environment: %v", err)
 	}
-	
-	// Skip if no secret key (can't decrypt)
-	if !HasSecretKey() {
-		t.Skip("No GPG secret key available for testing")
-	}
+	defer env.Cleanup()
+
+	// Set GNUPGHOME for this test
+	os.Setenv("GNUPGHOME", env.GNUPGHome)
+	os.Setenv("PASS_GPG_ID", noPassKey)
 
 	// Create temp directory
 	tempDir, err := os.MkdirTemp("", "pass-gpg-test")
@@ -63,9 +81,10 @@ func TestEncryptDecryptRoundTrip(t *testing.T) {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
 
-	// Encrypt the file
+	// Encrypt the file with batch mode
 	encryptedFile := filepath.Join(tempDir, "test.txt.gpg")
-	if err := EncryptFile(testFile, encryptedFile); err != nil {
+	opts := BatchGPGOptions("") // Batch mode without passphrase
+	if err := EncryptFileWithOptions(testFile, encryptedFile, opts); err != nil {
 		t.Fatalf("Failed to encrypt file: %v", err)
 	}
 	defer os.Remove(encryptedFile)
@@ -75,8 +94,8 @@ func TestEncryptDecryptRoundTrip(t *testing.T) {
 		t.Fatal("Encrypted file was not created")
 	}
 
-	// Decrypt the file
-	decrypted, err := DecryptFile(encryptedFile)
+	// Decrypt the file with batch mode
+	decrypted, err := DecryptFileWithOptions(encryptedFile, opts)
 	if err != nil {
 		t.Fatalf("Failed to decrypt file: %v", err)
 	}

@@ -15,24 +15,24 @@ func TestNormalizePath(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "forward slashes on Windows",
+			name:     "forward slashes",
 			input:    "email/gmail.com/user",
-			expected: "email\\gmail.com\\user", // On Windows
+			expected: "email/gmail.com/user",
 		},
 		{
 			name:     "backslashes",
 			input:    "email\\gmail.com\\user",
-			expected: "email\\gmail.com\\user",
+			expected: "email/gmail.com/user",
 		},
 		{
 			name:     "mixed slashes",
 			input:    "email/gmail.com\\user",
-			expected: "email\\gmail.com\\user",
+			expected: "email/gmail.com/user",
 		},
 		{
 			name:     "with dots",
 			input:    "email/./gmail.com/../gmail.com/user",
-			expected: "email\\gmail.com\\user",
+			expected: "email/gmail.com/user",
 		},
 		{
 			name:     "empty",
@@ -44,8 +44,11 @@ func TestNormalizePath(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := NormalizePath(tt.input)
-			// On Unix, separator is /, on Windows it's \\
-			expected := strings.ReplaceAll(tt.expected, "\\", string(filepath.Separator))
+			// Normalize expected to use OS separator
+			expected := strings.ReplaceAll(tt.expected, "/", string(filepath.Separator))
+			expected = strings.ReplaceAll(expected, "\\", string(filepath.Separator))
+			// Clean the path to match filepath.Clean behavior
+			expected = filepath.Clean(expected)
 			if result != expected {
 				t.Errorf("NormalizePath(%q) = %q, want %q", tt.input, result, expected)
 			}
@@ -162,5 +165,3 @@ func IsClipboardAvailable() bool {
 	cmd := exec.Command("clip")
 	return cmd.Run() == nil
 }
-
-

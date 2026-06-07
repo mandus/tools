@@ -4,7 +4,6 @@ package config
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 )
 
 // Config holds the application configuration.
@@ -32,11 +31,12 @@ func LoadConfig() *Config {
 // getDefaultStoreDir returns the default password store directory.
 func getDefaultStoreDir() string {
 	// Use USERPROFILE on Windows, HOME on Unix
+	// Always use forward slashes for consistency with pass convention
 	if home := os.Getenv("USERPROFILE"); home != "" {
-		return filepath.Join(home, ".password-store")
+		return home + "/.password-store"
 	}
 	if home := os.Getenv("HOME"); home != "" {
-		return filepath.Join(home, ".password-store")
+		return home + "/.password-store"
 	}
 	return ".password-store"
 }
