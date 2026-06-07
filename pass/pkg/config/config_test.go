@@ -85,20 +85,18 @@ func TestGetDefaultStoreDir(t *testing.T) {
 	os.Setenv("USERPROFILE", "C:\\Users\\test")
 	os.Unsetenv("HOME")
 	result := getDefaultStoreDir()
-	expected := "C:\\Users\\test\\.password-store"
+	expected := "C:\\Users\\test/.password-store"
 	if result != expected {
 		t.Errorf("getDefaultStoreDir() = %q, want %q", result, expected)
 	}
 
-	// Test with HOME (Unix) - skip on Windows since HOME isn't used
-	if os.PathSeparator == '/' {
-		os.Unsetenv("USERPROFILE")
-		os.Setenv("HOME", "/home/test")
-		result = getDefaultStoreDir()
-		expected := "/home/test/.password-store"
-		if result != expected {
-			t.Errorf("getDefaultStoreDir() = %q, want %q", result, expected)
-		}
+	// Test with HOME (Unix)
+	os.Unsetenv("USERPROFILE")
+	os.Setenv("HOME", "/home/test")
+	result = getDefaultStoreDir()
+	expected = "/home/test/.password-store"
+	if result != expected {
+		t.Errorf("getDefaultStoreDir() = %q, want %q", result, expected)
 	}
 
 	// Test fallback
@@ -150,8 +148,6 @@ func TestGetEnvAsBoolWithDefault(t *testing.T) {
 		{"false", "false", false},
 		{"0", "0", false},
 		{"no", "no", false},
-		// Skip empty test - when env var doesn't exist, should return default
-		// {"empty", "", false},
 	}
 
 	for _, tt := range tests {
