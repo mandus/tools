@@ -63,15 +63,15 @@ $ pass find gmail
 
 **Example with deep nesting:**
 ```
-├── dev/
-│   ├── hafslund/
-│   │   └── mistral-vibe-key
-│   └── mistral.ai/
-│       ├── api-access-alternate-key
-│       ├── asmund.odegard@hafslund.no
-│       └── for-pi-api-key
-└── nucmman/
-    └── mistral-vibe-key
+├── alpha/
+│   ├── companyA/
+│   │   └── projectX-key
+│   └── projectX.ai/
+│       ├── api-access-key-1
+│       ├── user1@companyA.com
+│       └── api-key-1
+└── beta/
+    └── projectX-key
 ```
 
 **Implementation Requirements:**
@@ -87,11 +87,11 @@ $ pass find gmail
 **Input:** List of matched paths from existing find logic
 ```go
 []string{
-    "dev/hafslund/mistral-vibe-key",
-    "dev/mistral.ai/api-access-alternate-key",
-    "dev/mistral.ai/asmund.odegard@hafslund.no",
-    "dev/mistral.ai/for-pi-api-key",
-    "nucmman/mistral-vibe-key",
+    "alpha/companyA/projectX-key",
+    "alpha/projectX.ai/api-access-key-1",
+    "alpha/projectX.ai/user1@companyA.com",
+    "alpha/projectX.ai/api-key-1",
+    "beta/projectX-key",
 }
 ```
 
@@ -104,7 +104,7 @@ $ pass find gmail
 **Node Structure:**
 ```go
 type TreeNode struct {
-    Name     string    // e.g., "dev", "hafslund", "mistral-vibe-key"
+    Name     string    // e.g., "alpha", "companyA", "projectX-key"
     IsDir    bool      // true if this node is a directory
     Children []*TreeNode  // child nodes, sorted alphabetically
 }
@@ -136,13 +136,13 @@ func renderTree(node *TreeNode, prefixes []string) string
 **Example:**
 ```
 root
-└── dev/
-    ├── hafslund/
-    │   └── mistral-vibe-key
-    └── mistral.ai/
-        ├── api-access-alternate-key
-        ├── asmund.odegard@hafslund.no
-        └── for-pi-api-key
+└── alpha/
+    ├── companyA/
+    │   └── projectX-key
+    └── projectX.ai/
+        ├── api-access-key-1
+        ├── user1@companyA.com
+        └── api-key-1
 ```
 
 ### 4. Command Integration

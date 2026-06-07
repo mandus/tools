@@ -117,11 +117,11 @@ func TestFindPasswordsTreeView(t *testing.T) {
 
 	// Create nested test password files
 	passwords := []string{
-		"dev/hafslund/mistral-vibe-key",
-		"dev/mistral.ai/api-access-alternate-key",
-		"dev/mistral.ai/asmund.odegard@hafslund.no",
-		"dev/mistral.ai/for-pi-api-key",
-		"nucmman/mistral-vibe-key",
+		"dev/companyA/projectX-key",
+		"dev/projectX.ai/api-access-key-1",
+		"dev/projectX.ai/user1@companyA.com",
+		"dev/projectX.ai/api-key-1",
+		"companyB/projectX-key",
 	}
 
 	for _, p := range passwords {
@@ -134,10 +134,10 @@ func TestFindPasswordsTreeView(t *testing.T) {
 		}
 	}
 
-	// Test finding "mistral" with tree view (flat=false)
+	// Test finding "projectX" with tree view (flat=false)
 	ignoreCaseFlag = false
 	
-	err = findPasswords("mistral", false)
+	err = findPasswords("projectX", false)
 	if err != nil {
 		t.Fatalf("findPasswords with tree view failed: %v", err)
 	}

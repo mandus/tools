@@ -788,14 +788,14 @@ func main() {
 	// Build a sample tree
 	root := tree.NewTreeNode("", false)
 	
-	// Add structure: dev/hafslund/mistral-vibe-key
-	dev := root.FindOrCreateChild("dev", true)
-	hafslund := dev.FindOrCreateChild("hafslund", true)
-	hafslund.AddChild(tree.NewTreeNode("mistral-vibe-key", false))
+	// Add structure: alpha/companyA/projectX-key
+	alpha := root.FindOrCreateChild("alpha", true)
+	companyA := alpha.FindOrCreateChild("companyA", true)
+	companyA.AddChild(tree.NewTreeNode("projectX-key", false))
 	
-	// Add structure: dev/mistral.ai/api-key
-	mistralAI := dev.FindOrCreateChild("mistral.ai", true)
-	mistralAI.AddChild(tree.NewTreeNode("api-key", false))
+	// Add structure: alpha/projectX.ai/api-key-1
+	projectXAI := alpha.FindOrCreateChild("projectX.ai", true)
+	projectXAI.AddChild(tree.NewTreeNode("api-key-1", false))
 	
 	// Render with optional styling
 	output := ""
@@ -805,11 +805,11 @@ func main() {
 	
 	fmt.Print(output)
 	// Output:
-	// ├── dev/
-	// │   ├── hafslund/
-	// │   │   └── mistral-vibe-key
-	// │   └── mistral.ai/
-	// │       └── api-key
+	// ├── alpha/
+	// │   ├── companyA/
+	// │   │   └── projectX-key
+	// │   └── projectX.ai/
+	// │       └── api-key-1
 }
 ```
 

@@ -150,57 +150,57 @@ func TestBuildTreeFromPathsWithGpgExtension(t *testing.T) {
 
 func TestBuildTreeFromPathsDeepNesting(t *testing.T) {
 	paths := []string{
-		"dev/hafslund/mistral-vibe-key",
-		"dev/mistral.ai/api-access-alternate-key",
-		"dev/mistral.ai/asmund.odegard@hafslund.no",
-		"dev/mistral.ai/for-pi-api-key",
-		"nucmman/mistral-vibe-key",
+		"alpha/companyA/projectX-key",
+		"alpha/projectX.ai/api-access-key-1",
+		"alpha/projectX.ai/user1@companyA.com",
+		"alpha/projectX.ai/api-key-1",
+		"beta/projectX-key",
 	}
 
 	root := BuildTreeFromPaths(paths)
 
 	if len(root.Children) != 2 {
-		t.Fatalf("Expected 2 top-level children (dev, nucmman), got %d", len(root.Children))
+		t.Fatalf("Expected 2 top-level children (alpha, beta), got %d", len(root.Children))
 	}
 
-	// Check dev directory structure
-	devDir := root.Children[0]
-	if devDir.Name != "dev" {
-		t.Fatalf("Expected first child to be 'dev', got '%s'", devDir.Name)
+	// Check alpha directory structure (should be first due to alphabetical sort)
+	alphaDir := root.Children[0]
+	if alphaDir.Name != "alpha" {
+		t.Fatalf("Expected first child to be 'alpha', got '%s'", alphaDir.Name)
 	}
 
-	if len(devDir.Children) != 2 {
-		t.Fatalf("Expected dev to have 2 children (hafslund, mistral.ai), got %d", len(devDir.Children))
+	if len(alphaDir.Children) != 2 {
+		t.Fatalf("Expected alpha to have 2 children (companyA, projectX.ai), got %d", len(alphaDir.Children))
 	}
 
-	// Check hafslund
-	hafslundDir := devDir.Children[0]
-	if hafslundDir.Name != "hafslund" {
-		t.Fatalf("Expected first dev child to be 'hafslund', got '%s'", hafslundDir.Name)
+	// Check companyA
+	companyADir := alphaDir.Children[0]
+	if companyADir.Name != "companyA" {
+		t.Fatalf("Expected first alpha child to be 'companyA', got '%s'", companyADir.Name)
 	}
-	if len(hafslundDir.Children) != 1 {
-		t.Fatalf("Expected hafslund to have 1 child, got %d", len(hafslundDir.Children))
+	if len(companyADir.Children) != 1 {
+		t.Fatalf("Expected companyA to have 1 child, got %d", len(companyADir.Children))
 	}
-	if hafslundDir.Children[0].Name != "mistral-vibe-key" {
-		t.Errorf("Expected hafslund child to be 'mistral-vibe-key', got '%s'", hafslundDir.Children[0].Name)
-	}
-
-	// Check mistral.ai
-	mistralAIDir := devDir.Children[1]
-	if mistralAIDir.Name != "mistral.ai" {
-		t.Fatalf("Expected second dev child to be 'mistral.ai', got '%s'", mistralAIDir.Name)
-	}
-	if len(mistralAIDir.Children) != 3 {
-		t.Fatalf("Expected mistral.ai to have 3 children, got %d", len(mistralAIDir.Children))
+	if companyADir.Children[0].Name != "projectX-key" {
+		t.Errorf("Expected companyA child to be 'projectX-key', got '%s'", companyADir.Children[0].Name)
 	}
 
-	// Check nucmman
-	nucmmanDir := root.Children[1]
-	if nucmmanDir.Name != "nucmman" {
-		t.Fatalf("Expected second top-level to be 'nucmman', got '%s'", nucmmanDir.Name)
+	// Check projectX.ai
+	projectXAIDir := alphaDir.Children[1]
+	if projectXAIDir.Name != "projectX.ai" {
+		t.Fatalf("Expected second alpha child to be 'projectX.ai', got '%s'", projectXAIDir.Name)
 	}
-	if len(nucmmanDir.Children) != 1 {
-		t.Fatalf("Expected nucmman to have 1 child, got %d", len(nucmmanDir.Children))
+	if len(projectXAIDir.Children) != 3 {
+		t.Fatalf("Expected projectX.ai to have 3 children, got %d", len(projectXAIDir.Children))
+	}
+
+	// Check beta
+	betaDir := root.Children[1]
+	if betaDir.Name != "beta" {
+		t.Fatalf("Expected second top-level to be 'beta', got '%s'", betaDir.Name)
+	}
+	if len(betaDir.Children) != 1 {
+		t.Fatalf("Expected beta to have 1 child, got %d", len(betaDir.Children))
 	}
 }
 
@@ -304,14 +304,14 @@ func TestRenderMultipleChildren(t *testing.T) {
 }
 
 func TestRenderDeepNesting(t *testing.T) {
-	// Build: dev/hafslund/mistral-vibe-key
+	// Build: dev/companyA/projectX-key
 	root := NewTreeNode("", false)
 	dev := NewTreeNode("dev", true)
-	hafslund := NewTreeNode("hafslund", true)
-	key := NewTreeNode("mistral-vibe-key", false)
+	companyA := NewTreeNode("companyA", true)
+	key := NewTreeNode("projectX-key", false)
 
-	hafslund.AddChild(key)
-	dev.AddChild(hafslund)
+	companyA.AddChild(key)
+	dev.AddChild(companyA)
 	root.AddChild(dev)
 
 	output := dev.Render("")
@@ -322,17 +322,17 @@ func TestRenderDeepNesting(t *testing.T) {
 	}
 
 	// Line 0: └── dev/
-	// Line 1:     └── hafslund/
-	// Line 2:         └── mistral-vibe-key
+	// Line 1:     └── companyA/
+	// Line 2:         └── projectX-key
 
 	if !strings.Contains(lines[0], "dev/") {
 		t.Errorf("Expected line 0 to contain 'dev/', got '%s'", lines[0])
 	}
-	if !strings.Contains(lines[1], "hafslund/") {
-		t.Errorf("Expected line 1 to contain 'hafslund/', got '%s'", lines[1])
+	if !strings.Contains(lines[1], "companyA/") {
+		t.Errorf("Expected line 1 to contain 'companyA/', got '%s'", lines[1])
 	}
-	if !strings.Contains(lines[2], "mistral-vibe-key") {
-		t.Errorf("Expected line 2 to contain 'mistral-vibe-key', got '%s'", lines[2])
+	if !strings.Contains(lines[2], "projectX-key") {
+		t.Errorf("Expected line 2 to contain 'projectX-key', got '%s'", lines[2])
 	}
 }
 
