@@ -6,22 +6,31 @@ Some simple tools for my own productivity.
 
 ## pass - Password Store Replacement
 
-Windows-compatible `pass` (password-store) replacement in Go.
+Windows-compatible `pass` (password-store) replacement in Go. Manages GPG-encrypted password files in `~/.password-store/` with git integration.
+
+### Features
+
+- GPG-encrypted password storage
+- Git integration for version control
+- Interactive fuzzy search with TUI (Bubble Tea)
+- Cross-platform (Windows, Linux, macOS)
+- Copy to clipboard support
+- Edit existing passwords with your favorite editor
 
 ### Build
 ```bash
-cd pass
-go build -o pass.exe .  # Windows
-go build -o pass .     # Linux/macOS
+cd pass && ./build.sh          # native build → ../shell/pass[.exe]
+cd pass && ./build.sh build    # same
+cd pass && ./build.sh build-all # cross-compile linux amd64/arm64 + windows arm64
 ```
 
 ### Install
 ```bash
 # Windows: copy pass.exe to PATH
-copy pass\pass.exe C:\Windows\System32\
+copy shell\pass.exe C:\Windows\System32\
 
 # Linux/macOS:
-sudo cp pass/pass /usr/local/bin/
+sudo cp shell/pass /usr/local/bin/
 ```
 
 ### Test
@@ -50,6 +59,22 @@ pass -c                   # Interactive fuzzy search with clipboard copy
 pass rm                   # Interactive fuzzy search to remove
 ```
 
+### TUI
+
+When running `pass`, `pass -c`, `pass rm`, or `pass edit` without arguments, an interactive TUI is displayed:
+- Use up/down arrows to navigate the list
+- Use left/right arrows to move cursor in search input
+- Use Tab to cycle through results
+- Type to filter passwords using fuzzy matching (subsequence matching)
+- Press Enter to select (show, copy, remove, or edit based on command)
+- Press Esc, Ctrl+C, Ctrl+D, or Ctrl+Q to exit
+
+### Configuration
+
+- `PASSWORD_STORE_DIR`: Custom password store location (default: `~/.password-store`)
+- `EDITOR`: Editor to use for editing passwords (default: `notepad` on Windows, `vi` on Unix)
+- Requires GPG to be installed and configured
+
 ### Prerequisites
 - Go 1.20+
 - GnuPG (GPG4Win on Windows)
@@ -57,6 +82,37 @@ pass rm                   # Interactive fuzzy search to remove
 
 ---
 
-## Other Tools
+## gitprompt - Git Prompt Utility
 
-- `shell/gitprompt.exe` - Git prompt utility
+Git prompt utility for shell integration.
+
+### Build
+```bash
+cd gitprompt && ./build.sh          # native build → ../shell/gitprompt[.exe]
+cd gitprompt && ./build.sh build    # same
+cd gitprompt && ./build.sh build-all # cross-compile linux amd64/arm64 + windows arm64
+```
+
+### Install
+```bash
+# Windows: copy gitprompt.exe to PATH
+copy shell\gitprompt.exe C:\Windows\System32\
+
+# Linux/macOS:
+sudo cp shell/gitprompt /usr/local/bin/
+```
+
+### Prerequisites
+- Go 1.25+ (go-git v5.19 dependency)
+
+---
+
+## Building All Tools
+
+Use the wrapper script to build both tools at once:
+```bash
+./shell/make.sh          # build both gitprompt and pass
+./shell/make.sh build    # same
+./shell/make.sh build-all # cross-compile both
+./shell/make.sh clean    # clean both builds
+```
