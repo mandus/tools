@@ -9,16 +9,64 @@ import (
 	"strings"
 )
 
+// GPGOptions contains options for GPG operations
+// This allows tests to specify batch mode, passphrase, etc.
+type GPGOptions struct {
+	BatchMode      bool
+	Passphrase     string
+	Recipient      string
+	UseAgent       bool
+	PinentryMode   string // "loopback" to bypass pinentry
+}
+
+// DefaultGPGOptions returns the default GPG options
+func DefaultGPGOptions() GPGOptions {
+	return GPGOptions{
+		BatchMode:    false,
+		UseAgent:     true,
+		PinentryMode: "",
+	}
+}
+
+// BatchGPGOptions returns options suitable for batch/non-interactive operations
+func BatchGPGOptions(passphrase string) GPGOptions {
+	return GPGOptions{
+		BatchMode:      true,
+		Passphrase:     passphrase,
+		UseAgent:       false,
+		PinentryMode:   "loopback",
+	}
+}
+
 // EncryptFile encrypts a file using GPG and saves it to the destination path.
 // Uses the default GPG key or the one specified in PASS_GPG_ID environment variable.
 func EncryptFile(srcPath, destPath string) error {
-	// Get recipient from environment or use default
-	recipient := os.Getenv("PASS_GPG_ID")
+	return EncryptFileWithOptions(srcPath, destPath, DefaultGPGOptions())
+}
+
+// EncryptFileWithOptions encrypts a file using GPG with custom options.
+// This allows for batch mode, specific recipients, and passphrase handling.
+func EncryptFileWithOptions(srcPath, destPath string, opts GPGOptions) error {
+	// Get recipient from options, environment, or use default
+	recipient := opts.Recipient
+	if recipient == "" {
+		recipient = os.Getenv("PASS_GPG_ID")
+	}
 	
 	args := []string{
 		"--encrypt",
 		"--armor", // ASCII-armored output for compatibility
 		"--yes",   // Assume yes to prompts
+	}
+	
+	// Add batch mode if requested
+	if opts.BatchMode {
+		args = append(args, "--batch")
+	}
+	
+	// Add pinentry mode if specified
+	if opts.PinentryMode != "" {
+		args = append(args, "--pinentry-mode", opts.PinentryMode)
 	}
 	
 	if recipient != "" {
@@ -50,7 +98,32 @@ func EncryptFile(srcPath, destPath string) error {
 // DecryptFile decrypts a GPG file and returns the plaintext content.
 // GPG will prompt for passphrase if needed (handled by gpg-agent).
 func DecryptFile(filePath string) (string, error) {
-	cmd := exec.Command("gpg", "--decrypt", filePath)
+	return DecryptFileWithOptions(filePath, DefaultGPGOptions())
+}
+
+// DecryptFileWithOptions decrypts a GPG file with custom options.
+// This allows for batch mode, passphrase specification, etc.
+func DecryptFileWithOptions(filePath string, opts GPGOptions) (string, error) {
+	args := []string{"--decrypt"}
+	
+	// Add batch mode if requested
+	if opts.BatchMode {
+		args = append(args, "--batch")
+	}
+	
+	// Add pinentry mode if specified
+	if opts.PinentryMode != "" {
+		args = append(args, "--pinentry-mode", opts.PinentryMode)
+	}
+	
+	// Add passphrase if provided (for batch mode)
+	if opts.Passphrase != "" {
+		args = append(args, "--passphrase", opts.Passphrase)
+	}
+	
+	args = append(args, filePath)
+	
+	cmd := exec.Command("gpg", args...)
 	
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
@@ -67,6 +140,9 @@ func DecryptFile(filePath string) (string, error) {
 		if strings.Contains(stderrStr, "decryption failed") {
 			return "", fmt.Errorf("pass: decryption failed: %s", extractGPGError(stderrStr))
 		}
+		if strings.Contains(stderrStr, "bad passphrase") || strings.Contains(stderrStr, "Bad passphrase") {
+			return "", fmt.Errorf("pass: decryption failed: Bad passphrase")
+		}
 		if strings.Contains(stderrStr, "gpg: WARN") || strings.Contains(stderrStr, "gpg: warning") {
 			// Non-fatal warning, try to return the output anyway
 			output := strings.TrimSuffix(stdout.String(), "\n")
@@ -75,7 +151,7 @@ func DecryptFile(filePath string) (string, error) {
 			}
 		}
 		
-		return "", fmt.Errorf("pass: GPG decryption failed: %v", err)
+		return "", fmt.Errorf("pass: GPG decryption failed: %v (stderr: %s)", err, stderrStr)
 	}
 	
 	// Trim trailing newline if present
@@ -107,6 +183,22 @@ func CheckGPG() error {
 	cmd := exec.Command("gpg", "--version")
 	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("gpg: command not found. Please install GPG4Win or GnuPG")
+	}
+	return nil
+}
+
+// CheckGPGBatch checks if GPG is available and can run in batch mode.
+// This is useful for tests to verify the environment is set up correctly.
+func CheckGPGBatch() error {
+	// Check basic GPG
+	if err := CheckGPG(); err != nil {
+		return err
+	}
+	
+	// Check batch mode works
+	cmd := exec.Command("gpg", "--batch", "--version")
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("gpg: batch mode not available: %v", err)
 	}
 	return nil
 }
