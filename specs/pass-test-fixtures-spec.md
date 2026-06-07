@@ -94,10 +94,10 @@ To prevent gpg-agent from blocking tests, we use:
 gpg --batch --yes --encrypt --armor --recipient <key-id> --output <out> <in>
 
 # Decrypt in batch mode without passphrase
-gpg --batch --pinentry-mode loopback --decrypt <file>
+gpg --batch --decrypt <file>
 
 # Decrypt in batch mode with passphrase
-gpg --batch --passphrase <passphrase> --decrypt <file>
+gpg --batch --pinentry-mode loopback --passphrase <passphrase> --decrypt <file>
 ```
 
 The `--pinentry-mode loopback` option allows GPG to bypass the pinentry prompt.
@@ -213,8 +213,8 @@ func TestDecryptWithPassphrase(t *testing.T) {
 ### Performance
 
 Key generation takes approximately 5-10 seconds. This is acceptable because:
-1. It only happens once per test run (keys are reused within the same test)
-2. Tests that don't need GPG are not affected
+1. It only happens in tests that that call `SetupTestEnvWithGPGKeys()` (tests that don't need GPG are not affected)
+2. Each test environment reuses its generated keys for the duration of that test
 3. The security and maintainability benefits outweigh the performance cost
 
 ### GPG Availability

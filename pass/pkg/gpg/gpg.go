@@ -15,7 +15,6 @@ type GPGOptions struct {
 	BatchMode      bool
 	Passphrase     string
 	Recipient      string
-	UseAgent       bool
 	PinentryMode   string // "loopback" to bypass pinentry
 }
 
@@ -23,7 +22,6 @@ type GPGOptions struct {
 func DefaultGPGOptions() GPGOptions {
 	return GPGOptions{
 		BatchMode:    false,
-		UseAgent:     true,
 		PinentryMode: "",
 	}
 }
@@ -33,7 +31,6 @@ func BatchGPGOptions(passphrase string) GPGOptions {
 	return GPGOptions{
 		BatchMode:      true,
 		Passphrase:     passphrase,
-		UseAgent:       false,
 		PinentryMode:   "loopback",
 	}
 }
