@@ -647,6 +647,251 @@ go mod tidy
 go get -u github.com/charmbracelet/bubbletea
 ```
 
+## Tree View Rendering
+
+For displaying hierarchical data like file systems or password stores, use box-drawing characters to create a tree structure.
+
+### Box-Drawing Characters
+
+| Character | Unicode | Description | Usage |
+|-----------|---------|-------------|-------|
+| `├` | U+251C | Box drawings light vertical and horizontal | Branch with siblings below |
+| `└` | U+2514 | Box drawings light up and horizontal | Last branch in group |
+| `│` | U+2502 | Box drawings light vertical | Vertical connector |
+| `─` | U+2500 | Box drawings light horizontal | Horizontal line |
+
+**Combined characters:**
+- `├── ` : Item with siblings below
+- `└── ` : Last item in group
+- `│   ` : Vertical connector with indentation
+- `    ` : Pure indentation (4 spaces)
+
+### Tree Node Structure
+
+```go
+package tree
+
+import (
+	"fmt"
+	"strings"
+)
+
+// TreeNode represents a node in a hierarchical tree
+type TreeNode struct {
+	Name     string
+	IsDir    bool
+	Children []*TreeNode
+}
+
+// NewTreeNode creates a new tree node
+func NewTreeNode(name string, isDir bool) *TreeNode {
+	return &TreeNode{
+		Name:     name,
+		IsDir:    isDir,
+		Children: []*TreeNode{},
+	}
+}
+
+// AddChild adds a child and maintains alphabetical sort
+func (n *TreeNode) AddChild(child *TreeNode) {
+	n.Children = append(n.Children, child)
+	// Sort children alphabetically (bubble sort for simplicity)
+	for i := 0; i < len(n.Children)-1; i++ {
+		for j := 0; j < len(n.Children)-i-1; j++ {
+			if n.Children[j].Name > n.Children[j+1].Name {
+				n.Children[j], n.Children[j+1] = n.Children[j+1], n.Children[j]
+			}
+		}
+	}
+}
+
+// FindOrCreateChild finds a child by name or creates it
+func (n *TreeNode) FindOrCreateChild(name string, isDir bool) *TreeNode {
+	for _, child := range n.Children {
+		if child.Name == name {
+			return child
+		}
+	}
+	child := NewTreeNode(name, isDir)
+	n.AddChild(child)
+	return child
+}
+```
+
+### Tree Rendering with Box-Drawing Characters
+
+```go
+// Render renders the tree with proper indentation and connectors
+func (n *TreeNode) Render(prefix string) string {
+	var sb strings.Builder
+
+	// Determine connector based on position
+	connector := "└── "
+	if len(prefix) > 0 && !strings.HasSuffix(prefix, "    ") {
+		connector = "├── "
+	}
+
+	// Format name
+	displayName := n.Name
+	if n.IsDir {
+		displayName += "/"
+	}
+
+	sb.WriteString(prefix + connector + displayName + "\n")
+
+	// Render children
+	for i, child := range n.Children {
+		isLast := i == len(n.Children)-1
+		childPrefix := prefix
+		if !isLast {
+			childPrefix += "│   "
+		} else {
+			childPrefix += "    "
+		}
+		sb.WriteString(child.Render(childPrefix))
+	}
+
+	return sb.String()
+}
+
+// BuildTreeFromPaths creates a tree from flat path list
+func BuildTreeFromPaths(paths []string) *TreeNode {
+	root := NewTreeNode("", false)
+
+	for _, path := range paths {
+		// Split path into components
+		components := strings.Split(path, "/")
+
+		// Build tree structure
+		current := root
+		for i, component := range components {
+			isDir := i < len(components)-1
+			current = current.FindOrCreateChild(component, isDir)
+		}
+	}
+
+	return root
+}
+```
+
+### Complete Tree View Example
+
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/charmbracelet/lipgloss"
+)
+
+func main() {
+	// Build a sample tree
+	root := tree.NewTreeNode("", false)
+	
+	// Add structure: dev/hafslund/mistral-vibe-key
+	dev := root.FindOrCreateChild("dev", true)
+	hafslund := dev.FindOrCreateChild("hafslund", true)
+	hafslund.AddChild(tree.NewTreeNode("mistral-vibe-key", false))
+	
+	// Add structure: dev/mistral.ai/api-key
+	mistralAI := dev.FindOrCreateChild("mistral.ai", true)
+	mistralAI.AddChild(tree.NewTreeNode("api-key", false))
+	
+	// Render with optional styling
+	output := ""
+	for i, child := range root.Children {
+		output += child.Render("")
+	}
+	
+	fmt.Print(output)
+	// Output:
+	// ├── dev/
+	// │   ├── hafslund/
+	// │   │   └── mistral-vibe-key
+	// │   └── mistral.ai/
+	// │       └── api-key
+}
+```
+
+### Tree View with Lip Gloss Styling
+
+For enhanced visual appearance, apply styles to different tree elements:
+
+```go
+var (
+	// Style for directory names
+	dirStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#5DADE2")) // Blue
+
+	// Style for file names
+	fileStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#FFFFFF")) // White
+
+	// Style for tree characters (├──, └──, │)
+	treeCharStyle = lipgloss.NewStyle().
+		Foreground(lipgloss.Color("#7D3C98")) // Purple
+)
+
+// StyledRender renders tree with colors
+func (n *TreeNode) StyledRender(prefix string) string {
+	var sb strings.Builder
+
+	connector := "└── "
+	if len(prefix) > 0 && !strings.HasSuffix(prefix, "    ") {
+		connector = "├── "
+	}
+
+	displayName := n.Name
+	if n.IsDir {
+		displayName += "/"
+	}
+
+	// Style the connector and name differently
+	styledConnector := treeCharStyle.Render(connector)
+	var styledName string
+	if n.IsDir {
+		styledName = dirStyle.Render(displayName)
+	} else {
+		styledName = fileStyle.Render(displayName)
+	}
+
+	sb.WriteString(prefix + styledConnector + styledName + "\n")
+
+	for i, child := range n.Children {
+		isLast := i == len(n.Children)-1
+		childPrefix := prefix
+		if !isLast {
+			childPrefix += treeCharStyle.Render("│   ")
+		} else {
+			childPrefix += "    "
+		}
+		sb.WriteString(child.StyledRender(childPrefix))
+	}
+
+	return sb.String()
+}
+```
+
+### Handling Deep Nesting
+
+For very deep directory structures, consider:
+
+1. **Limiting depth**: Stop rendering after a certain level
+2. **Collapsing**: Show "..." for deep branches
+3. **Horizontal scrolling**: For terminals that support it
+4. **Truncation**: Use ellipsis for long names
+
+```go
+const maxDepth = 10
+
+func (n *TreeNode) RenderWithDepth(prefix string, depth int) string {
+	if depth > maxDepth {
+		return prefix + "└── ... (truncated)\n"
+	}
+	// ... normal rendering ...
+}
+```
+
 ## Resources
 
 - [Bubble Tea GitHub](https://github.com/charmbracelet/bubbletea)
