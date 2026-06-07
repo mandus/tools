@@ -12,10 +12,12 @@ import (
 )
 
 // NormalizePath converts a path to use the OS-specific separator.
-// On Windows, converts / to \. Also handles path normalization.
+// On Windows, converts / to \. On Unix, converts \ to /. Also handles path normalization.
 func NormalizePath(path string) string {
-	// Replace forward slashes with OS separator
+	// Replace both forward and backward slashes with OS separator
+	// This ensures cross-platform compatibility
 	normalized := strings.ReplaceAll(path, "/", string(filepath.Separator))
+	normalized = strings.ReplaceAll(normalized, "\\", string(filepath.Separator))
 	
 	// Clean the path (remove . and .. elements)
 	return filepath.Clean(normalized)
@@ -24,8 +26,11 @@ func NormalizePath(path string) string {
 // NormalizePathForDisplay converts a path to use forward slashes for display.
 // This ensures consistent output across platforms.
 func NormalizePathForDisplay(path string) string {
-	// Replace OS separator with forward slash
-	return strings.ReplaceAll(path, string(filepath.Separator), "/")
+	// Replace both OS separator and backslash with forward slash
+	// This handles paths from both Windows and Unix systems
+	result := strings.ReplaceAll(path, "\\", "/")
+	result = strings.ReplaceAll(result, string(filepath.Separator), "/")
+	return result
 }
 
 // SecureDelete securely deletes a file by overwriting it before removal.
