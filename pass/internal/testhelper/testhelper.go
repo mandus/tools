@@ -70,6 +70,12 @@ func SetupTestEnv() (*TestEnv, error) {
     os.RemoveAll(tempDir)
     return nil, err
   }
+  // Normalize path for GPG compatibility (use forward slashes on Windows)
+  env.GNUPGHome = filepath.ToSlash(env.GNUPGHome)
+  // On Windows, convert drive letter to Unix-style path (e.g., C:/ -> /c/)
+  if runtime.GOOS == "windows" && len(env.GNUPGHome) > 1 && env.GNUPGHome[1] == ':' {
+    env.GNUPGHome = "/" + strings.ToLower(string(env.GNUPGHome[0])) + env.GNUPGHome[2:]
+  }
   
   // Set up password store directory
   env.PasswordStore = filepath.Join(tempDir, "password-store")
@@ -77,6 +83,8 @@ func SetupTestEnv() (*TestEnv, error) {
     os.RemoveAll(tempDir)
     return nil, err
   }
+  // Normalize path for consistency
+  env.PasswordStore = filepath.ToSlash(env.PasswordStore)
   
   // Configure environment
   os.Setenv("GNUPGHOME", env.GNUPGHome)
