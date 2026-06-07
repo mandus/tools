@@ -63,9 +63,10 @@ func TestEncryptDecryptRoundTrip(t *testing.T) {
 		t.Fatalf("Failed to write test file: %v", err)
 	}
 
-	// Encrypt the file
+	// Encrypt the file with batch mode
 	encryptedFile := filepath.Join(tempDir, "test.txt.gpg")
-	if err := EncryptFile(testFile, encryptedFile); err != nil {
+	opts := BatchGPGOptions("") // Batch mode without passphrase
+	if err := EncryptFileWithOptions(testFile, encryptedFile, opts); err != nil {
 		t.Fatalf("Failed to encrypt file: %v", err)
 	}
 	defer os.Remove(encryptedFile)
@@ -75,8 +76,8 @@ func TestEncryptDecryptRoundTrip(t *testing.T) {
 		t.Fatal("Encrypted file was not created")
 	}
 
-	// Decrypt the file
-	decrypted, err := DecryptFile(encryptedFile)
+	// Decrypt the file with batch mode
+	decrypted, err := DecryptFileWithOptions(encryptedFile, opts)
 	if err != nil {
 		t.Fatalf("Failed to decrypt file: %v", err)
 	}

@@ -195,12 +195,11 @@ func GenerateTestGPGKeys(gpgHome string) (string, string, error) {
 func generateTestKey(gpgHome, name, email, passphrase string, noPassphrase bool) (string, error) {
   args := []string{
     "--batch",
+    "--pinentry-mode", "loopback",
     "--gen-key",
   }
   
-  if noPassphrase {
-    args = append(args, "--passphrase", "")
-  } else if passphrase != "" {
+  if !noPassphrase && passphrase != "" {
     args = append(args, "--passphrase", passphrase)
   }
   
