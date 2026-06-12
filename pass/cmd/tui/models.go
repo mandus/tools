@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbletea"
 	"github.com/mandu/tools/pass/pkg/fuzzy"
+	"github.com/mandu/tools/pass/pkg/git"
 )
 
 // item represents a password entry in the list
@@ -182,6 +183,10 @@ type Model struct {
 	// All passwords (for filtering)
 	allPasswords []string
 	
+	// Git status
+	gitStatus    git.GitStatus
+	gitStatusErr error
+	
 	// State
 	loading   bool
 	error     error
@@ -223,6 +228,40 @@ func getPrompt(mode FuzzySearchMode) string {
 	}
 }
 
+// getGitStatusLine returns a formatted git status line for display
+func getGitStatusLine(status git.GitStatus) string {
+	if !status.IsGitRepo {
+		return ""
+	}
+	
+	var parts []string
+	
+	// Branch
+	if status.Branch != "" {
+		parts = append(parts, "Git: "+status.Branch)
+	} else {
+		parts = append(parts, "Git: HEAD")
+	}
+	
+	// Sync status
+	if status.Ahead > 0 && status.Behind > 0 {
+		parts = append(parts, fmt.Sprintf("⬆%d⬇%d", status.Ahead, status.Behind))
+	} else if status.Ahead > 0 {
+		parts = append(parts, fmt.Sprintf("⬆%d", status.Ahead))
+	} else if status.Behind > 0 {
+		parts = append(parts, fmt.Sprintf("⬇%d", status.Behind))
+	} else if status.IsClean && !status.HasUncommitted {
+		parts = append(parts, "=")
+	}
+	
+	// Uncommitted changes
+	if status.HasUncommitted {
+		parts = append(parts, "*")
+	}
+	
+	return strings.Join(parts, " ")
+}
+
 // Init initializes the model
 func (m *Model) Init() tea.Cmd {
 	return textinput.Blink
@@ -259,6 +298,26 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		// Handle keyboard input
 		return m.handleKeyMsg(msg)
+		
+	case gitPushResult:
+		// Handle git push result
+		if msg.err != nil {
+			m.error = fmt.Errorf("git push failed: %v", msg.err)
+		} else {
+			// Refresh git status after successful push
+			m.gitStatus = git.GetGitStatus(getPasswordStoreDir())
+		}
+		return m, nil
+		
+	case gitUpdateResult:
+		// Handle git update result
+		if msg.err != nil {
+			m.error = fmt.Errorf("git update failed: %v", msg.err)
+		} else {
+			// Refresh git status after successful update
+			m.gitStatus = git.GetGitStatus(getPasswordStoreDir())
+		}
+		return m, nil
 	}
 	
 	// Handle list-specific messages
@@ -287,7 +346,20 @@ func (m *Model) View() string {
 	var view string
 	
 	// Header
-	view += getTitle(m.mode) + "\n\n"
+	view += getTitle(m.mode) + "\n"
+	
+	// Git status line (if available)
+	if m.gitStatus.IsGitRepo {
+		gitStatusLine := getGitStatusLine(m.gitStatus)
+		if gitStatusLine != "" {
+			view += gitStatusLine + "\n"
+		}
+	} else if m.gitStatusErr != nil {
+		view += fmt.Sprintf("Git: %v\n", m.gitStatusErr)
+	} else {
+		view += "Git: not a repository\n"
+	}
+	view += ""
 	
 	// Input prompt and value
 	prompt := getPrompt(m.mode)
@@ -327,6 +399,20 @@ func (m *Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			nextIdx := (m.list.Index() + 1) % len(m.list.Items())
 			m.list.Select(nextIdx)
 		}
+		return m, nil
+		
+	// Git operations
+	case msg.String() == "ctrl+p":
+		// Push changes to remote
+		return m, handleGitPush
+		
+	case msg.String() == "ctrl+u":
+		// Update (pull) from remote
+		return m, handleGitUpdate
+		
+	case msg.String() == "ctrl+r":
+		// Refresh git status
+		m.gitStatus = git.GetGitStatus(getPasswordStoreDir())
 		return m, nil
 		
 	// List navigation keys - pass to list
@@ -385,7 +471,7 @@ func (m *Model) filterList() {
 
 // helpView returns the help text
 func helpView() string {
-	return "↑/↓: Navigate | Enter: Select | Esc/Ctrl+C: Cancel | Ctrl+Q: Quit"
+	return "↑/↓: Navigate | Enter: Select | Esc/Ctrl+C: Cancel | Ctrl+Q: Quit | Ctrl+P: Push | Ctrl+U: Update | Ctrl+R: Refresh"
 }
 
 // recreateInput recreates a textinput with a new width while preserving its value
@@ -400,6 +486,32 @@ func recreateInput(old textinput.Model, width int) textinput.Model {
 	newInput.SetValue(old.Value())
 	newInput.Focus()
 	return newInput
+}
+
+// Git operation commands
+
+// gitPushResult represents the result of a git push operation
+type gitPushResult struct {
+	err error
+}
+
+// gitUpdateResult represents the result of a git update operation
+type gitUpdateResult struct {
+	err error
+}
+
+// handleGitPush attempts to push changes to the remote
+func handleGitPush() tea.Msg {
+	storeDir := getPasswordStoreDir()
+	err := git.Push(storeDir)
+	return gitPushResult{err: err}
+}
+
+// handleGitUpdate attempts to update (pull) from the remote
+func handleGitUpdate() tea.Msg {
+	storeDir := getPasswordStoreDir()
+	err := git.Update(storeDir)
+	return gitUpdateResult{err: err}
 }
 
 // NewModel creates a new fuzzy search model
@@ -435,6 +547,7 @@ func NewModel(passwords []string, mode FuzzySearchMode) *Model {
 		input:        input,
 		mode:         mode,
 		allPasswords: passwords,
+		gitStatus:    git.GetGitStatus(getPasswordStoreDir()),
 		loading:      false,
 		quitting:     false,
 		width:        80,

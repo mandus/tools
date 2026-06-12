@@ -92,6 +92,7 @@ func Execute() error {
 	addFindCmd()
 	addRmCmd()
 	addEditCmd()
+	addGitCmd()
 
 	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {
