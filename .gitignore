@@ -2,4 +2,5 @@ shell/gitprompt
 shell/gitprompt-linux-amd64
 shell/gitprompt-linux-arm64
 shell/gitprompt-windows-arm64.exe
+shell/pass
 */*.exe
