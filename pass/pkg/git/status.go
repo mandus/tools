@@ -274,7 +274,7 @@ func getGitConfig(dir, branch string) (gitConfig, error) {
 	if err != nil {
 		return cfg, err
 	}
-	cfg.Merge = strings.TrimSpace(string(output))
+	cfg.Merge = strings.TrimPrefix(strings.TrimSpace(string(output)), "refs/heads/")
 	
 	return cfg, nil
 }
@@ -294,6 +294,9 @@ func getUpstreamFromRef(dir, branch string) (gitConfig, error) {
 	if upstream == "" {
 		return cfg, fmt.Errorf("no upstream")
 	}
+	
+	// Strip refs/heads/ prefix if present
+	upstream = strings.TrimPrefix(upstream, "refs/heads/")
 	
 	// Parse upstream to get remote and branch
 	parts := strings.Split(upstream, "/")
@@ -402,7 +405,9 @@ func getCommitHash(dir, branch string) (string, error) {
 
 // getRemoteCommitHash uses git ls-remote to get the actual remote commit hash
 func getRemoteCommitHash(dir, remote, branch string) (string, error) {
-	cmd := exec.Command("git", "ls-remote", remote, "refs/heads/"+branch)
+	// Strip refs/heads/ prefix if present (git config returns branch.merge as refs/heads/<name>)
+	branchRef := strings.TrimPrefix(branch, "refs/heads/")
+	cmd := exec.Command("git", "ls-remote", remote, "refs/heads/"+branchRef)
 	cmd.Dir = dir
 	output, err := cmd.Output()
 	if err != nil {
@@ -438,6 +443,9 @@ func getRemoteRefHash(dir, remote, branch string) (string, error) {
 }
 
 // countAheadBehind counts commits ahead and behind using git rev-list
+// With --left-right flag:
+// - '<' means commit is reachable only from first argument (local) = ahead
+// - '>' means commit is reachable only from second argument (remote) = behind
 func countAheadBehind(dir, localHash, remoteHash string) (int, int, error) {
 	cmd := exec.Command("git", "rev-list", "--left-right", localHash+"..."+remoteHash)
 	cmd.Dir = dir
@@ -455,10 +463,12 @@ func countAheadBehind(dir, localHash, remoteHash string) (int, int, error) {
 		if line == "" {
 			continue
 		}
+		// '<' = reachable only from local (first arg) = ahead
+		// '>' = reachable only from remote (second arg) = behind
 		if len(line) > 0 && line[0] == '<' {
-			behind++
-		} else if len(line) > 0 && line[0] == '>' {
 			ahead++
+		} else if len(line) > 0 && line[0] == '>' {
+			behind++
 		}
 	}
 	
