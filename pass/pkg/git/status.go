@@ -379,7 +379,9 @@ func getSyncStatus(dir, branch string) (ahead, behind int, remote, trackingBranc
 	// Use git rev-list to count commits ahead and behind
 	ahead, behind, err = countAheadBehind(dir, localHash, remoteHash)
 	if err != nil {
-		return 0, 0, remote, trackingBranch, fmt.Errorf("failed to count commits: %v", err)
+		// Non-fatal error - just return 0,0 and the remote info we have
+		// This can happen if git rev-list fails (e.g., repository issues)
+		return 0, 0, remote, trackingBranch, nil
 	}
 	
 	return ahead, behind, remote, trackingBranch, nil
