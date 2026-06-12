@@ -9,6 +9,7 @@ import (
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/mandu/tools/pass/pkg/fuzzy"
 	"github.com/mandu/tools/pass/pkg/git"
 )
@@ -228,43 +229,35 @@ func getPrompt(mode FuzzySearchMode) string {
 	}
 }
 
-// getGitStatusLine returns a formatted git status line for display
+// getGitStatusLine returns a formatted git status line for display with colors
 func getGitStatusLine(status git.GitStatus) string {
 	if !status.IsGitRepo {
 		return ""
 	}
 	
-	var parts []string
+	// Use the String() method which already has the simple symbols
+	// But we'll add colors to make it fancy
+	base := status.String()
 	
-	// Branch
-	if status.Branch != "" {
-		parts = append(parts, "Git: "+status.Branch)
-	} else {
-		parts = append(parts, "Git: HEAD")
+	if base == "" || !status.IsGitRepo {
+		return ""
 	}
 	
-	// Merge conflict indicator (show first if present)
+	// Color code the status based on state
+	// Green for up to date, Yellow for ahead/behind, Red for conflicts
 	if status.HasMergeConflict {
-		parts = append(parts, "!")
+		// Red for conflicts
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#FF0000")).Render("Git: " + base)
+	} else if status.Ahead > 0 || status.Behind > 0 {
+		// Yellow for not in sync
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFF00")).Render("Git: " + base)
+	} else if status.HasUncommitted {
+		// Yellow for uncommitted changes
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#FFFF00")).Render("Git: " + base)
+	} else {
+		// Green for up to date
+		return lipgloss.NewStyle().Foreground(lipgloss.Color("#00FF00")).Render("Git: " + base)
 	}
-	
-	// Sync status
-	if status.Ahead > 0 && status.Behind > 0 {
-		parts = append(parts, fmt.Sprintf("⬆%d⬇%d", status.Ahead, status.Behind))
-	} else if status.Ahead > 0 {
-		parts = append(parts, fmt.Sprintf("⬆%d", status.Ahead))
-	} else if status.Behind > 0 {
-		parts = append(parts, fmt.Sprintf("⬇%d", status.Behind))
-	} else if status.IsClean && !status.HasUncommitted {
-		parts = append(parts, "=")
-	}
-	
-	// Uncommitted changes
-	if status.HasUncommitted {
-		parts = append(parts, "*")
-	}
-	
-	return strings.Join(parts, " ")
 }
 
 // Init initializes the model
