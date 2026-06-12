@@ -37,9 +37,19 @@ func setupTestGitRepo(t *testing.T) (string, func()) {
 		t.Fatalf("Failed to initialize git repo: %v", err)
 	}
 	
-	// Configure git user
-	exec.Command("git", "config", "user.email", "test@example.com").Run()
-	exec.Command("git", "config", "user.name", "Test User").Run()
+	// Configure git user in the repo directory
+	cmd = exec.Command("git", "config", "user.email", "test@example.com")
+	cmd.Dir = tempDir
+	if err := cmd.Run(); err != nil {
+		cleanup()
+		t.Fatalf("Failed to configure git user.email: %v", err)
+	}
+	cmd = exec.Command("git", "config", "user.name", "Test User")
+	cmd.Dir = tempDir
+	if err := cmd.Run(); err != nil {
+		cleanup()
+		t.Fatalf("Failed to configure git user.name: %v", err)
+	}
 	
 	return tempDir, cleanup
 }
@@ -82,8 +92,18 @@ func setupTestGitRepoWithRemote(t *testing.T) (string, string, func()) {
 	}
 	
 	// Configure git user in local repo
-	exec.Command("git", "config", "user.email", "test@example.com").Run()
-	exec.Command("git", "config", "user.name", "Test User").Run()
+	cmd = exec.Command("git", "config", "user.email", "test@example.com")
+	cmd.Dir = localDir
+	if err := cmd.Run(); err != nil {
+		cleanup()
+		t.Fatalf("Failed to configure git user.email: %v", err)
+	}
+	cmd = exec.Command("git", "config", "user.name", "Test User")
+	cmd.Dir = localDir
+	if err := cmd.Run(); err != nil {
+		cleanup()
+		t.Fatalf("Failed to configure git user.name: %v", err)
+	}
 	
 	// Add remote
 	cmd = exec.Command("git", "remote", "add", "origin", remoteDir)
@@ -410,6 +430,14 @@ func TestInitGitRepo(t *testing.T) {
 			t.Fatalf("Failed to create temp dir: %v", err)
 		}
 		defer os.RemoveAll(tempDir)
+		
+		// Set environment variables for git user configuration
+		os.Setenv("PASS_GIT_NAME", "Test User")
+		os.Setenv("PASS_GIT_EMAIL", "test@example.com")
+		defer func() {
+			os.Unsetenv("PASS_GIT_NAME")
+			os.Unsetenv("PASS_GIT_EMAIL")
+		}()
 		
 		if err := InitGitRepo(tempDir); err != nil {
 			t.Fatalf("Failed to initialize git repo: %v", err)

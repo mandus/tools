@@ -28,9 +28,19 @@ func setupTestPasswordStoreWithGit(t *testing.T) (string, func()) {
 		t.Fatalf("Failed to initialize git repo: %v", err)
 	}
 	
-	// Configure git user
-	exec.Command("git", "config", "user.email", "test@example.com").Run()
-	exec.Command("git", "config", "user.name", "Test User").Run()
+	// Configure git user in the repo directory
+	cmd = exec.Command("git", "config", "user.email", "test@example.com")
+	cmd.Dir = tempDir
+	if err := cmd.Run(); err != nil {
+		cleanup()
+		t.Fatalf("Failed to configure git user.email: %v", err)
+	}
+	cmd = exec.Command("git", "config", "user.name", "Test User")
+	cmd.Dir = tempDir
+	if err := cmd.Run(); err != nil {
+		cleanup()
+		t.Fatalf("Failed to configure git user.name: %v", err)
+	}
 	
 	// Create initial commit
 	cmd = exec.Command("git", "commit", "--allow-empty", "-m", "Initial commit")

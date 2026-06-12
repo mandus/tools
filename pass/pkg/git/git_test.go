@@ -2,6 +2,7 @@ package git
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 )
@@ -58,6 +59,18 @@ func TestAddAndCommit(t *testing.T) {
 		t.Fatalf("InitRepo failed: %v", err)
 	}
 
+	// Configure git user in the repo directory
+	cmd := exec.Command("git", "config", "user.email", "test@example.com")
+	cmd.Dir = tempDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to configure git user.email: %v", err)
+	}
+	cmd = exec.Command("git", "config", "user.name", "Test User")
+	cmd.Dir = tempDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to configure git user.name: %v", err)
+	}
+
 	// Create a test file
 	testFile := filepath.Join(tempDir, "test.txt")
 	if err := os.WriteFile(testFile, []byte("test"), 0644); err != nil {
@@ -92,6 +105,18 @@ func TestRunGitConfig(t *testing.T) {
 	// Initialize git repo first
 	if err := InitRepo(tempDir); err != nil {
 		t.Fatalf("InitRepo failed: %v", err)
+	}
+
+	// Configure git user in the repo directory
+	cmd := exec.Command("git", "config", "user.email", "test@example.com")
+	cmd.Dir = tempDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to configure git user.email: %v", err)
+	}
+	cmd = exec.Command("git", "config", "user.name", "Test User")
+	cmd.Dir = tempDir
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to configure git user.name: %v", err)
 	}
 
 	// Set a config value

@@ -34,8 +34,9 @@ func InitRepo(dir string) error {
 
 // configureGitUser configures git user.name and user.email if not already set.
 func configureGitUser(dir string) error {
-	// Check if user.name is set
-	cmd := exec.Command("git", "config", "user.name")
+	// Check if user.name is set in the repo (local config)
+	cmd := exec.Command("git", "config", "--local", "user.name")
+	cmd.Dir = dir
 	if err := cmd.Run(); err != nil {
 		// Try to set from environment or default
 		name := os.Getenv("PASS_GIT_NAME")
@@ -52,8 +53,9 @@ func configureGitUser(dir string) error {
 		}
 	}
 	
-	// Check if user.email is set
-	cmd = exec.Command("git", "config", "user.email")
+	// Check if user.email is set in the repo (local config)
+	cmd = exec.Command("git", "config", "--local", "user.email")
+	cmd.Dir = dir
 	if err := cmd.Run(); err != nil {
 		// Try to set from environment or default
 		email := os.Getenv("PASS_GIT_EMAIL")
