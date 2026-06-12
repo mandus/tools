@@ -27,14 +27,21 @@ const (
 )
 
 // getPasswordStoreDir returns the password store directory path
+// Cross-platform: uses USERPROFILE on Windows, HOME on Unix
 func getPasswordStoreDir() string {
 	dir := os.Getenv("PASSWORD_STORE_DIR")
 	if dir != "" {
 		return dir
 	}
-	// Default to %USERPROFILE%\.password-store on Windows
-	// or ~/.password-store on Unix
-	return fmt.Sprintf("%s/.password-store", os.Getenv("USERPROFILE"))
+	// Use USERPROFILE on Windows, HOME on Unix
+	// Always use forward slashes for consistency with pass convention
+	if home := os.Getenv("USERPROFILE"); home != "" {
+		return home + "/.password-store"
+	}
+	if home := os.Getenv("HOME"); home != "" {
+		return home + "/.password-store"
+	}
+	return ".password-store"
 }
 
 // styles for the TUI
