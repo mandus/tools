@@ -180,22 +180,13 @@ func runGitStatus(cmd *cobra.Command, args []string) error {
 	}
 	
 	if verbose {
-		// Show detailed status
+		// Show detailed status with commit counts
 		fmt.Println(status.DetailedString())
 	} else {
-		// Show compact status
+		// Show compact status with simple symbols only
 		fmt.Printf("Git status: %s\n", status.String())
 		
-		// Add additional info
-		if status.Ahead > 0 {
-			fmt.Printf("  %d commit(s) ahead of %s/%s\n", status.Ahead, status.Remote, status.TrackingBranch)
-		}
-		if status.Behind > 0 {
-			fmt.Printf("  %d commit(s) behind %s/%s\n", status.Behind, status.Remote, status.TrackingBranch)
-		}
-		if status.HasUncommitted {
-			fmt.Println("  Uncommitted changes present")
-		}
+		// Only show "Up to date" message, no commit counts
 		if status.IsClean && !status.HasUncommitted && status.Ahead == 0 && status.Behind == 0 {
 			fmt.Println("  Up to date")
 		}
