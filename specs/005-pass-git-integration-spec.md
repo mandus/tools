@@ -46,7 +46,7 @@ So that I can see if I have uncommitted changes or if I'm behind the remote.
 **Acceptance Criteria**:
 - [x] `pass git` command shows current git status
 - [x] Status indicates: clean/up-to-date, local changes, behind remote, ahead remote, dirty (uncommitted)
-- [x] Color-coded output for easy identification (symbols: =, *, ⬆N, ⬇N, !)
+- [x] Color-coded output for easy identification (symbols: =, *, >, <, <>, !)
 - [x] Works in both initialized and non-initialized git repos
 
 ### As a pass user, I want to push my changes to the remote
@@ -156,7 +156,7 @@ Git status will be displayed in the TUI header or as a status bar at the bottom:
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  Select password (Enter to show, Esc to cancel)            │
-│  Git: main ⬆2 ⬇0 * (2 ahead, dirty)                       │
+│  Git: main <> * (diverged, dirty)                          │
 ├─────────────────────────────────────────────────────────┤
 │  > email/gmail.com/user                                    │
 │    email/outlook.com/work                                  │
@@ -168,10 +168,10 @@ Search:
 **Symbols**:
 - `*` = uncommitted changes (dirty)
 - `!` = merge conflicts
-- `⬆N` = N commits ahead of remote
-- `⬇N` = N commits behind remote
-- `=` = up to date
+- `>` = ahead of remote
+- `<` = behind remote
 - `<>` = diverged (both ahead and behind)
+- `=` = up to date
 
 #### Keyboard Shortcuts
 
@@ -342,7 +342,7 @@ func setupTestGitRepo(t *testing.T) (string, func()) {
 - [x] TUI keyboard shortcuts work for git operations (defined, need runtime verification)
 - [x] All tests pass
 - [x] No personal data in tests or code
-- [ ] Documentation updated (README, docs)
+- [x] Documentation updated (README, specs)
 
 ## Appendix
 
@@ -391,14 +391,14 @@ Git: main = (up to date)
 Git: main * (uncommitted changes)
 
 # Ahead
-Git: main ⬆2 (2 ahead)
+Git: main > (ahead)
 
 # Behind
-Git: main ⬇3 (3 behind)
+Git: main < (behind)
 
 # Diverged
-Git: main ⬆2⬇1 (2 ahead, 1 behind)
+Git: main <> (diverged)
 
 # Multiple issues
-Git: main ⬆2⬇1 * (2 ahead, 1 behind, uncommitted)
+Git: main <> * (diverged, uncommitted)
 ```

@@ -65,7 +65,7 @@ Git status display in the fuzzy search TUI:
 
 - **Git status line**: Shows branch, sync status, and uncommitted changes
   - Format: `Git: <branch> <sync-status> [*]`
-  - Symbols: `*` = uncommitted, `⬆N` = N ahead, `⬇N` = N behind, `=` = up to date
+  - Symbols: `*` = uncommitted, `>` = ahead, `<` = behind, `<>` = diverged, `=` = up to date
   
 - **Keyboard shortcuts** (planned, need verification):
   - `Ctrl+P`: Push changes to remote
@@ -211,7 +211,7 @@ Git status: main *
 
 # After committing
 $ pass git
-Git status: main ⬆1
+Git status: main >
   1 commit(s) ahead of origin/main
 
 # Push changes

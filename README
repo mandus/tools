@@ -81,17 +81,18 @@ When running `pass`, `pass -c`, `pass rm`, or `pass edit` without arguments, an 
 - Press Esc, Ctrl+C, Ctrl+D, or Ctrl+Q to exit
 
 **Git operations in TUI:**
-- Git status is displayed in the header (e.g., `Git: main ⬆2⬇1 *`)
+- Git status is displayed in the header with colors (e.g., `Git: main <` in yellow)
 - `Ctrl+P` - Push changes to remote
 - `Ctrl+U` - Pull changes from remote
 - `Ctrl+R` - Refresh git status
 
-**Status symbols:**
-- `*` = uncommitted changes
-- `!` = merge conflicts
-- `⬆N` = N commits ahead of remote
-- `⬇N` = N commits behind remote
-- `=` = up to date
+**Status symbols and colors:**
+- `*` = uncommitted changes (yellow)
+- `!` = merge conflicts (red)
+- `>` = ahead of remote (yellow)
+- `<` = behind remote (yellow)
+- `<>` = diverged - both ahead and behind (yellow)
+- `=` = up to date (green)
 
 ### Configuration
 
