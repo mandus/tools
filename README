@@ -12,7 +12,9 @@ Windows-compatible `pass` (password-store) replacement in Go. Manages GPG-encryp
 
 - GPG-encrypted password storage
 - Git integration for version control
+- **New: Git status and operations** (`pass git`, `pass git push`, `pass git update`)
 - Interactive fuzzy search with TUI (Bubble Tea)
+- Git status displayed in TUI
 - Cross-platform (Windows, Linux, macOS)
 - Copy to clipboard support
 - Edit existing passwords with your favorite editor
@@ -47,6 +49,7 @@ go test ./...
 
 ### Usage
 ```bash
+# Password management
 pass ls                    # List passwords (files only)
 pass find gmail            # Search
 pass email/gmail.com/user  # Show password
@@ -57,6 +60,14 @@ pass edit                 # Interactive fuzzy search to edit
 pass                       # Interactive fuzzy search TUI
 pass -c                   # Interactive fuzzy search with clipboard copy
 pass rm                   # Interactive fuzzy search to remove
+
+# Git integration (new!)
+pass git                  # Show git status of password store
+pass git -v               # Show detailed git status
+pass git push             # Push changes to remote
+pass git update           # Pull changes from remote
+pass git init             # Initialize git repository
+pass git status           # Alias for 'pass git'
 ```
 
 ### TUI
@@ -68,6 +79,20 @@ When running `pass`, `pass -c`, `pass rm`, or `pass edit` without arguments, an 
 - Type to filter passwords using fuzzy matching (subsequence matching)
 - Press Enter to select (show, copy, remove, or edit based on command)
 - Press Esc, Ctrl+C, Ctrl+D, or Ctrl+Q to exit
+
+**Git operations in TUI:**
+- Git status is displayed in the header with colors (e.g., `Git: main <` in yellow)
+- `Ctrl+P` - Push changes to remote
+- `Ctrl+U` - Pull changes from remote
+- `Ctrl+R` - Refresh git status
+
+**Status symbols and colors:**
+- `*` = uncommitted changes (yellow)
+- `!` = merge conflicts (red)
+- `>` = ahead of remote (yellow)
+- `<` = behind remote (yellow)
+- `<>` = diverged - both ahead and behind (yellow)
+- `=` = up to date (green)
 
 ### Configuration
 

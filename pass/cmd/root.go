@@ -2,7 +2,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/mandu/tools/pass/cmd/tui"
@@ -92,6 +91,7 @@ func Execute() error {
 	addFindCmd()
 	addRmCmd()
 	addEditCmd()
+	addGitCmd()
 
 	// Execute the root command
 	if err := rootCmd.Execute(); err != nil {
@@ -101,14 +101,21 @@ func Execute() error {
 }
 
 // GetPasswordStoreDir returns the password store directory path
+// Cross-platform: uses USERPROFILE on Windows, HOME on Unix
 func GetPasswordStoreDir() string {
 	dir := os.Getenv("PASSWORD_STORE_DIR")
 	if dir != "" {
 		return dir
 	}
-	// Default to %USERPROFILE%\.password-store on Windows
-	// or ~/.password-store on Unix
-	return fmt.Sprintf("%s/.password-store", os.Getenv("USERPROFILE"))
+	// Use USERPROFILE on Windows, HOME on Unix
+	// Always use forward slashes for consistency with pass convention
+	if home := os.Getenv("USERPROFILE"); home != "" {
+		return home + "/.password-store"
+	}
+	if home := os.Getenv("HOME"); home != "" {
+		return home + "/.password-store"
+	}
+	return ".password-store"
 }
 
 // IsClipboardFlagSet returns whether the -c/--clip flag is set
