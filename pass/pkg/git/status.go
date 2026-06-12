@@ -58,13 +58,13 @@ func (gs GitStatus) String() string {
 		parts = append(parts, "!")
 	}
 	
-	// Sync status
+	// Sync status - use simple symbols like git-prompt
 	if gs.Ahead > 0 && gs.Behind > 0 {
-		parts = append(parts, fmt.Sprintf("⬆%d⬇%d", gs.Ahead, gs.Behind))
+		parts = append(parts, "<>")
 	} else if gs.Ahead > 0 {
-		parts = append(parts, fmt.Sprintf("⬆%d", gs.Ahead))
+		parts = append(parts, ">")
 	} else if gs.Behind > 0 {
-		parts = append(parts, fmt.Sprintf("⬇%d", gs.Behind))
+		parts = append(parts, "<")
 	} else if gs.IsClean && !gs.HasUncommitted {
 		parts = append(parts, "=")
 	}

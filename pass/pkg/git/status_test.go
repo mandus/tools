@@ -310,22 +310,22 @@ func TestGitStatus_String(t *testing.T) {
 		{
 			name:     "Ahead",
 			status:   GitStatus{IsGitRepo: true, Branch: "master", IsClean: true, HasUncommitted: false, Ahead: 2, Behind: 0},
-			expected: "master ⬆2",
+			expected: "master >",
 		},
 		{
 			name:     "Behind",
 			status:   GitStatus{IsGitRepo: true, Branch: "master", IsClean: true, HasUncommitted: false, Ahead: 0, Behind: 3},
-			expected: "master ⬇3",
+			expected: "master <",
 		},
 		{
 			name:     "Diverged",
 			status:   GitStatus{IsGitRepo: true, Branch: "master", IsClean: true, HasUncommitted: false, Ahead: 2, Behind: 1},
-			expected: "master ⬆2⬇1",
+			expected: "master <>",
 		},
 		{
 			name:     "Ahead and dirty",
 			status:   GitStatus{IsGitRepo: true, Branch: "master", IsClean: false, HasUncommitted: true, Ahead: 2, Behind: 0},
-			expected: "master ⬆2 *",
+			expected: "master > *",
 		},
 		{
 			name:     "Not a git repo",
