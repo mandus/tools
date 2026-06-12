@@ -243,6 +243,11 @@ func getGitStatusLine(status git.GitStatus) string {
 		parts = append(parts, "Git: HEAD")
 	}
 	
+	// Merge conflict indicator (show first if present)
+	if status.HasMergeConflict {
+		parts = append(parts, "!")
+	}
+	
 	// Sync status
 	if status.Ahead > 0 && status.Behind > 0 {
 		parts = append(parts, fmt.Sprintf("⬆%d⬇%d", status.Ahead, status.Behind))

@@ -18,6 +18,8 @@ type GitStatus struct {
 	IsClean bool
 	// HasUncommitted indicates whether there are uncommitted changes (staged or unstaged)
 	HasUncommitted bool
+	// HasMergeConflict indicates whether there are merge conflicts
+	HasMergeConflict bool
 	// Ahead is the number of commits ahead of the remote tracking branch
 	Ahead int
 	// Behind is the number of commits behind the remote tracking branch
@@ -49,6 +51,11 @@ func (gs GitStatus) String() string {
 		parts = append(parts, gs.Branch)
 	} else {
 		parts = append(parts, "HEAD")
+	}
+	
+	// Merge conflict indicator
+	if gs.HasMergeConflict {
+		parts = append(parts, "!")
 	}
 	
 	// Sync status
@@ -98,6 +105,12 @@ func (gs GitStatus) DetailedString() string {
 		lines = append(lines, "Uncommitted changes: yes")
 	} else {
 		lines = append(lines, "Uncommitted changes: no")
+	}
+	
+	if gs.HasMergeConflict {
+		lines = append(lines, "Merge conflicts: yes")
+	} else {
+		lines = append(lines, "Merge conflicts: no")
 	}
 	
 	if gs.IsClean {
@@ -153,6 +166,17 @@ func GetGitStatus(dir string) GitStatus {
 		status.IsClean = !hasUncommitted
 	}
 	
+	// Check for merge conflicts
+	hasMergeConflict, err := hasMergeConflicts(dir)
+	if err != nil {
+		// Non-fatal
+		if status.Error == nil {
+			status.Error = err
+		}
+	} else {
+		status.HasMergeConflict = hasMergeConflict
+	}
+	
 	// Get sync status with remote
 	ahead, behind, remote, trackingBranch, err := getSyncStatus(dir, branch)
 	if err != nil {
@@ -203,64 +227,242 @@ func hasUncommittedChanges(dir string) (bool, error) {
 	return len(output) > 0, nil
 }
 
+// hasMergeConflicts checks if there are merge conflicts
+func hasMergeConflicts(dir string) (bool, error) {
+	// Check for merge conflict markers or use git status
+	cmd := exec.Command("git", "status", "--porcelain=v1")
+	cmd.Dir = dir
+	output, err := cmd.Output()
+	if err != nil {
+		return false, fmt.Errorf("failed to check merge conflicts: %v", err)
+	}
+	
+	// Check for conflict markers in git status output
+	outputStr := string(output)
+	if strings.Contains(outputStr, "UU") || strings.Contains(outputStr, "AA") ||
+		strings.Contains(outputStr, "DD") || strings.Contains(outputStr, "both modified") ||
+		strings.Contains(outputStr, "both added") || strings.Contains(outputStr, "both deleted") {
+		return true, nil
+	}
+	
+	return false, nil
+}
+
+// gitConfig holds git branch configuration
+type gitConfig struct {
+	Remote string
+	Merge  string
+}
+
+// getGitConfig retrieves branch remote and merge configuration
+func getGitConfig(dir, branch string) (gitConfig, error) {
+	var cfg gitConfig
+	
+	// Get remote
+	cmd := exec.Command("git", "config", "branch."+branch+".remote")
+	cmd.Dir = dir
+	output, err := cmd.Output()
+	if err != nil {
+		return cfg, err
+	}
+	cfg.Remote = strings.TrimSpace(string(output))
+	
+	// Get merge
+	cmd = exec.Command("git", "config", "branch."+branch+".merge")
+	cmd.Dir = dir
+	output, err = cmd.Output()
+	if err != nil {
+		return cfg, err
+	}
+	cfg.Merge = strings.TrimSpace(string(output))
+	
+	return cfg, nil
+}
+
+// getUpstreamFromRef tries to get upstream from @{upstream} ref
+func getUpstreamFromRef(dir, branch string) (gitConfig, error) {
+	var cfg gitConfig
+	
+	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", branch+"@{upstream}")
+	cmd.Dir = dir
+	output, err := cmd.Output()
+	if err != nil {
+		return cfg, err
+	}
+	
+	upstream := strings.TrimSpace(string(output))
+	if upstream == "" {
+		return cfg, fmt.Errorf("no upstream")
+	}
+	
+	// Parse upstream to get remote and branch
+	parts := strings.Split(upstream, "/")
+	if len(parts) >= 2 {
+		cfg.Remote = parts[0]
+		cfg.Merge = strings.Join(parts[1:], "/")
+	} else {
+		cfg.Remote = upstream
+		cfg.Merge = branch
+	}
+	
+	return cfg, nil
+}
+
 // getSyncStatus returns the ahead/behind counts and remote tracking info
+// Uses multiple strategies to determine sync status:
+// 1. Try git ls-remote (queries actual remote state)
+// 2. Fallback to git fetch --dry-run (simulates fetch, updates remote refs)
+// 3. Fallback to local remote refs (cached, might be stale)
 func getSyncStatus(dir, branch string) (ahead, behind int, remote, trackingBranch string, err error) {
 	// If detached HEAD, we can't get sync status
 	if branch == "HEAD" {
 		return 0, 0, "", "", nil
 	}
 	
-	// Get the tracking branch info
-	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", branch+"@{upstream}")
-	cmd.Dir = dir
-	output, err := cmd.Output()
+	var cfg gitConfig
+	
+	// First, try to get the upstream from git config (branch.<branch>.remote and branch.<branch>.merge)
+	cfg, err = getGitConfig(dir, branch)
 	if err != nil {
-		// No upstream configured - this is normal
+		// Non-fatal, try the @{upstream} approach
+		cfg, err = getUpstreamFromRef(dir, branch)
+		if err != nil {
+			return 0, 0, "", "", nil
+		}
+	}
+	
+	if cfg.Remote == "" || cfg.Merge == "" {
 		return 0, 0, "", "", nil
 	}
 	
-	upstream := strings.TrimSpace(string(output))
-	if upstream == "" {
-		return 0, 0, "", "", nil
+	remote = cfg.Remote
+	trackingBranch = cfg.Merge
+	
+	// Get local hash
+	localHash, err := getCommitHash(dir, branch)
+	if err != nil {
+		return 0, 0, remote, trackingBranch, fmt.Errorf("failed to get local hash: %v", err)
 	}
 	
-	// Parse upstream to get remote and branch
-	// Format is typically "origin/main" or "remote-name/branch-name"
-	parts := strings.Split(upstream, "/")
-	if len(parts) >= 2 {
-		remote = parts[0]
-		trackingBranch = strings.Join(parts[1:], "/")
+	// Try to get remote hash using multiple strategies
+	var remoteHash string
+	
+	// Strategy 1: Use git ls-remote (most reliable, queries actual remote)
+	remoteHash, err = getRemoteCommitHash(dir, remote, trackingBranch)
+	if err == nil && remoteHash != "" {
+		// Success with ls-remote
 	} else {
-		remote = upstream
-		trackingBranch = branch
+		// Strategy 2: Try git fetch --dry-run to update remote refs
+		if err := fetchRemote(dir, remote); err == nil {
+			// After fetch, try local remote ref again
+			remoteHash, err = getRemoteRefHash(dir, remote, trackingBranch)
+		}
+		
+		// Strategy 3: Fallback to local remote ref without fetch
+		if err != nil || remoteHash == "" {
+			remoteHash, err = getRemoteRefHash(dir, remote, trackingBranch)
+			if err != nil {
+				// Can't determine sync status without remote hash
+				return 0, 0, remote, trackingBranch, nil
+			}
+		}
+	}
+	
+	// If hashes are the same, we're in sync
+	if localHash == remoteHash {
+		return 0, 0, remote, trackingBranch, nil
 	}
 	
 	// Use git rev-list to count commits ahead and behind
-	// Ahead: commits in branch not in upstream
-	cmd = exec.Command("git", "rev-list", "--left-right", branch+"..."+upstream)
-	cmd.Dir = dir
-	output, err = cmd.Output()
+	ahead, behind, err = countAheadBehind(dir, localHash, remoteHash)
 	if err != nil {
 		return 0, 0, remote, trackingBranch, fmt.Errorf("failed to count commits: %v", err)
 	}
 	
+	return ahead, behind, remote, trackingBranch, nil
+}
+
+// fetchRemote performs a dry-run fetch to update remote refs
+func fetchRemote(dir, remote string) error {
+	cmd := exec.Command("git", "fetch", "--dry-run", remote)
+	cmd.Dir = dir
+	return cmd.Run()
+}
+
+// getCommitHash gets the commit hash for a branch
+func getCommitHash(dir, branch string) (string, error) {
+	cmd := exec.Command("git", "rev-parse", branch)
+	cmd.Dir = dir
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
+// getRemoteCommitHash uses git ls-remote to get the actual remote commit hash
+func getRemoteCommitHash(dir, remote, branch string) (string, error) {
+	cmd := exec.Command("git", "ls-remote", remote, "refs/heads/"+branch)
+	cmd.Dir = dir
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	
+	// Output format: <hash>\trefs/heads/<branch>
+	lines := strings.Split(string(output), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, "\t", 2)
+		if len(parts) >= 1 {
+			return strings.TrimSpace(parts[0]), nil
+		}
+	}
+	
+	return "", fmt.Errorf("no hash found for %s/%s", remote, branch)
+}
+
+// getRemoteRefHash gets the remote hash from local remote reference
+func getRemoteRefHash(dir, remote, branch string) (string, error) {
+	remoteRefName := "refs/remotes/" + remote + "/" + branch
+	cmd := exec.Command("git", "rev-parse", remoteRefName)
+	cmd.Dir = dir
+	output, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
+}
+
+// countAheadBehind counts commits ahead and behind using git rev-list
+func countAheadBehind(dir, localHash, remoteHash string) (int, int, error) {
+	cmd := exec.Command("git", "rev-list", "--left-right", localHash+"..."+remoteHash)
+	cmd.Dir = dir
+	output, err := cmd.Output()
+	if err != nil {
+		return 0, 0, err
+	}
+	
 	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
-	ahead = 0
-	behind = 0
+	ahead := 0
+	behind := 0
 	
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue
 		}
-		if line[0] == '<' {
+		if len(line) > 0 && line[0] == '<' {
 			behind++
-		} else if line[0] == '>' {
+		} else if len(line) > 0 && line[0] == '>' {
 			ahead++
 		}
 	}
 	
-	return ahead, behind, remote, trackingBranch, nil
+	return ahead, behind, nil
 }
 
 // CheckRemoteConfigured checks if a remote is configured for the repository
@@ -333,7 +535,9 @@ func Update(dir string) error {
 	if err != nil {
 		// Check if it's a merge conflict
 		outputStr := string(output)
-		if strings.Contains(outputStr, "CONFLICT") || strings.Contains(outputStr, "merge conflict") {
+		if strings.Contains(outputStr, "CONFLICT") || strings.Contains(outputStr, "merge conflict") ||
+			strings.Contains(outputStr, "both modified") || strings.Contains(outputStr, "both added") ||
+			strings.Contains(outputStr, "both deleted") {
 			return fmt.Errorf("merge conflict detected. Resolve conflicts and commit, or use 'git merge --abort'")
 		}
 		return fmt.Errorf("git pull failed: %v\n%s", err, string(output))

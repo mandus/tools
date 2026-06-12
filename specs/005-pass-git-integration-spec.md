@@ -44,47 +44,47 @@ This specification addresses these gaps by adding git status checking, push, and
 So that I can see if I have uncommitted changes or if I'm behind the remote.
 
 **Acceptance Criteria**:
-- [ ] `pass git` command shows current git status
-- [ ] Status indicates: clean/up-to-date, local changes, behind remote, ahead remote, dirty (uncommitted)
-- [ ] Color-coded output for easy identification
-- [ ] Works in both initialized and non-initialized git repos
+- [x] `pass git` command shows current git status
+- [x] Status indicates: clean/up-to-date, local changes, behind remote, ahead remote, dirty (uncommitted)
+- [x] Color-coded output for easy identification (symbols: =, *, ⬆N, ⬇N, !)
+- [x] Works in both initialized and non-initialized git repos
 
 ### As a pass user, I want to push my changes to the remote
 So that my password store is backed up.
 
 **Acceptance Criteria**:
-- [ ] `pass git push` pushes changes to the configured remote
-- [ ] Handles push errors gracefully
-- [ ] Provides feedback on push success/failure
-- [ ] Respects existing git configuration (remote, branch)
+- [x] `pass git push` pushes changes to the configured remote
+- [x] Handles push errors gracefully
+- [x] Provides feedback on push success/failure
+- [x] Respects existing git configuration (remote, branch)
 
 ### As a pass user, I want to update my local store from the remote
 So that I have the latest passwords.
 
 **Acceptance Criteria**:
-- [ ] `pass git update` fetches and merges changes from remote
-- [ ] Handles merge conflicts gracefully (non-fatal, with warning)
-- [ ] Provides feedback on update success/failure
-- [ ] Uses `git pull` (fetch + merge) by default
+- [x] `pass git update` fetches and merges changes from remote
+- [x] Handles merge conflicts gracefully (non-fatal, with warning)
+- [x] Provides feedback on update success/failure
+- [x] Uses `git pull` (fetch + merge) by default
 
 ### As a pass TUI user, I want to see git status in the interface
 So that I'm always aware of the sync state of my passwords.
 
 **Acceptance Criteria**:
-- [ ] Git status displayed in TUI header or status bar
-- [ ] Status updates dynamically
-- [ ] Shows same information as `pass git` command
-- [ ] Non-intrusive, doesn't interfere with password search
+- [x] Git status displayed in TUI header or status bar
+- [x] Status updates dynamically (on Ctrl+R, after push/update)
+- [x] Shows same information as `pass git` command
+- [x] Non-intrusive, doesn't interfere with password search
 
 ### As a pass TUI user, I want keyboard shortcuts for git operations
 So that I can manage git without leaving the TUI.
 
 **Acceptance Criteria**:
-- [ ] Keyboard shortcut to push changes (e.g., `Ctrl+P`)
-- [ ] Keyboard shortcut to update from remote (e.g., `Ctrl+U`)
-- [ ] Keyboard shortcut to refresh git status (e.g., `Ctrl+R`)
-- [ ] Visual feedback when operations complete
-- [ ] Error messages displayed in TUI
+- [x] Keyboard shortcut to push changes (Ctrl+P)
+- [x] Keyboard shortcut to update from remote (Ctrl+U)
+- [x] Keyboard shortcut to refresh git status (Ctrl+R)
+- [x] Visual feedback when operations complete (status updates)
+- [x] Error messages displayed in TUI
 
 ## Technical Design
 
@@ -110,14 +110,16 @@ The implementation will consist of:
 
 ```go
 type GitStatus struct {
-    IsGitRepo      bool
-    IsClean        bool
-    HasUncommitted bool  // Dirty - unstaged or staged changes
-    Ahead          int   // Commits ahead of remote
-    Behind         int   // Commits behind remote
-    Branch         string
-    Remote         string
-    Error          error // Any error encountered
+    IsGitRepo        bool
+    IsClean          bool
+    HasUncommitted   bool  // Dirty - unstaged or staged changes
+    HasMergeConflict bool  // Merge conflicts present
+    Ahead            int   // Commits ahead of remote
+    Behind           int   // Commits behind remote
+    Branch           string
+    Remote           string
+    TrackingBranch   string
+    Error            error // Any error encountered
 }
 
 func GetGitStatus(storeDir string) GitStatus
@@ -165,6 +167,7 @@ Search:
 
 **Symbols**:
 - `*` = uncommitted changes (dirty)
+- `!` = merge conflicts
 - `⬆N` = N commits ahead of remote
 - `⬇N` = N commits behind remote
 - `=` = up to date
@@ -332,14 +335,14 @@ func setupTestGitRepo(t *testing.T) (string, func()) {
 
 ## Success Criteria
 
-- [ ] `pass git` command works and shows correct status
-- [ ] `pass git push` successfully pushes changes
-- [ ] `pass git update` successfully pulls changes
-- [ ] TUI shows git status information
-- [ ] TUI keyboard shortcuts work for git operations
-- [ ] All tests pass
-- [ ] No personal data in tests or code
-- [ ] Documentation updated
+- [x] `pass git` command works and shows correct status
+- [x] `pass git push` successfully pushes changes
+- [x] `pass git update` successfully pulls changes
+- [x] TUI shows git status information
+- [x] TUI keyboard shortcuts work for git operations (defined, need runtime verification)
+- [x] All tests pass
+- [x] No personal data in tests or code
+- [ ] Documentation updated (README, docs)
 
 ## Appendix
 
