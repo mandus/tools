@@ -85,6 +85,8 @@ So that I can manage git without leaving the TUI.
 - [x] Keyboard shortcut to refresh git status (Ctrl+R)
 - [x] Visual feedback when operations complete (status updates)
 - [x] Error messages displayed in TUI
+- [ ] Password list refreshed after git push/update operations
+- [ ] Newly pulled passwords are visible in TUI after update
 
 ## Technical Design
 
@@ -343,6 +345,7 @@ func setupTestGitRepo(t *testing.T) (string, func()) {
 - [x] All tests pass
 - [x] No personal data in tests or code
 - [x] Documentation updated (README, specs)
+- [ ] Password list refreshes after git operations
 
 ## Appendix
 

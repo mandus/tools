@@ -302,8 +302,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			m.error = fmt.Errorf("git push failed: %v", msg.err)
 		} else {
-			// Refresh git status after successful push
+			// Refresh git status and password list after successful push
 			m.gitStatus = git.GetGitStatus(getPasswordStoreDir())
+			m.refreshPasswordList()
 		}
 		return m, nil
 		
@@ -312,8 +313,9 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.err != nil {
 			m.error = fmt.Errorf("git update failed: %v", msg.err)
 		} else {
-			// Refresh git status after successful update
+			// Refresh git status and password list after successful update
 			m.gitStatus = git.GetGitStatus(getPasswordStoreDir())
+			m.refreshPasswordList()
 		}
 		return m, nil
 	}
@@ -553,4 +555,16 @@ func NewModel(passwords []string, mode FuzzySearchMode) *Model {
 	}
 	
 	return model
+}
+
+// refreshPasswordList refreshes the list of passwords from the store
+func (m *Model) refreshPasswordList() {
+	passwords, err := CollectAllPasswords(getPasswordStoreDir())
+	if err != nil {
+		// Keep existing list if there's an error
+		return
+	}
+	m.allPasswords = passwords
+	// Re-filter with current query
+	m.filterList()
 }
