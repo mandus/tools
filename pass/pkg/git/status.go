@@ -311,87 +311,84 @@ func getUpstreamFromRef(dir, branch string) (gitConfig, error) {
 	return cfg, nil
 }
 
+// getUpstreamRef gets the upstream reference for a branch as a string
+func getUpstreamRef(dir, branch string) (string, error) {
+	// Try @{upstream} first
+	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", branch+"@{upstream}")
+	cmd.Dir = dir
+	output, err := cmd.Output()
+	if err == nil {
+		return strings.TrimSpace(string(output)), nil
+	}
+	
+	// Fallback to git config
+	cfg, err := getGitConfig(dir, branch)
+	if err != nil {
+		return "", err
+	}
+	
+	if cfg.Remote != "" && cfg.Merge != "" {
+		return cfg.Remote + "/" + strings.TrimPrefix(cfg.Merge, "refs/heads/"), nil
+	}
+	
+	return "", fmt.Errorf("no upstream configured")
+}
+
 // getSyncStatus returns the ahead/behind counts and remote tracking info
-// Uses multiple strategies to determine sync status:
-// 1. Try git ls-remote (queries actual remote state)
-// 2. Fallback to git fetch --dry-run (simulates fetch, updates remote refs)
-// 3. Fallback to local remote refs (cached, might be stale)
+// Uses git fetch to update remote refs, then git rev-list --count --left-right
 func getSyncStatus(dir, branch string) (ahead, behind int, remote, trackingBranch string, err error) {
 	// If detached HEAD, we can't get sync status
 	if branch == "HEAD" {
 		return 0, 0, "", "", nil
 	}
 	
-	var cfg gitConfig
-	
-	// First, try to get the upstream from git config (branch.<branch>.remote and branch.<branch>.merge)
-	cfg, err = getGitConfig(dir, branch)
+	// Get upstream reference using @{upstream}
+	upstream, err := getUpstreamRef(dir, branch)
 	if err != nil {
-		// Non-fatal, try the @{upstream} approach
-		cfg, err = getUpstreamFromRef(dir, branch)
-		if err != nil {
-			return 0, 0, "", "", nil
-		}
-	}
-	
-	if cfg.Remote == "" || cfg.Merge == "" {
+		// No upstream configured
 		return 0, 0, "", "", nil
 	}
 	
-	remote = cfg.Remote
-	trackingBranch = cfg.Merge
-	
-	// Get local hash
-	localHash, err := getCommitHash(dir, branch)
-	if err != nil {
-		return 0, 0, remote, trackingBranch, fmt.Errorf("failed to get local hash: %v", err)
-	}
-	
-	// Try to get remote hash using multiple strategies
-	var remoteHash string
-	
-	// Strategy 1: Use git ls-remote (most reliable, queries actual remote)
-	remoteHash, err = getRemoteCommitHash(dir, remote, trackingBranch)
-	if err == nil && remoteHash != "" {
-		// Success with ls-remote
+	// Parse upstream to get remote and tracking branch
+	parts := strings.SplitN(upstream, "/", 2)
+	if len(parts) >= 2 {
+		remote = parts[0]
+		trackingBranch = parts[1]
 	} else {
-		// Strategy 2: Try git fetch --dry-run to update remote refs
-		if err := fetchRemote(dir, remote); err == nil {
-			// After fetch, try local remote ref again
-			remoteHash, err = getRemoteRefHash(dir, remote, trackingBranch)
-		}
-		
-		// Strategy 3: Fallback to local remote ref without fetch
-		if err != nil || remoteHash == "" {
-			remoteHash, err = getRemoteRefHash(dir, remote, trackingBranch)
-			if err != nil {
-				// Can't determine sync status without remote hash
-				return 0, 0, remote, trackingBranch, nil
-			}
-		}
+		remote = upstream
+		trackingBranch = branch
 	}
 	
-	// If hashes are the same, we're in sync
-	if localHash == remoteHash {
-		return 0, 0, remote, trackingBranch, nil
+	// Strip refs/heads/ prefix if present
+	upstream = strings.TrimPrefix(upstream, "refs/heads/")
+	
+	// Fetch from remote to update local remote refs
+	// This ensures we're comparing with the actual remote state
+	fetchCmd := exec.Command("git", "fetch", remote)
+	fetchCmd.Dir = dir
+	if err := fetchCmd.Run(); err != nil {
+		// Non-fatal: if fetch fails, we'll try with local refs
+		// (they might be stale, but that's acceptable)
 	}
 	
-	// Use git rev-list to count commits ahead and behind
-	ahead, behind, err = countAheadBehind(dir, localHash, remoteHash)
+	// Use git rev-list --count --left-right to get ahead/behind
+	// Format: git rev-list --count --left-right <upstream>...HEAD
+	cmd := exec.Command("git", "rev-list", "--count", "--left-right", upstream+"...HEAD")
+	cmd.Dir = dir
+	output, err := cmd.Output()
 	if err != nil {
-		// Non-fatal error - just return 0,0 and the remote info we have
-		// This can happen if git rev-list fails (e.g., repository issues)
+		// Non-fatal error
 		return 0, 0, remote, trackingBranch, nil
+	}
+	
+	// Parse output: "<ahead> <behind>"
+	fields := strings.Fields(strings.TrimSpace(string(output)))
+	if len(fields) >= 2 {
+		fmt.Sscanf(fields[0], "%d", &ahead)
+		fmt.Sscanf(fields[1], "%d", &behind)
 	}
 	
 	return ahead, behind, remote, trackingBranch, nil
-}
-
-// fetchRemote performs a dry-run fetch to update remote refs
-func fetchRemote(dir, remote string) error {
-	cmd := exec.Command("git", "fetch", "--dry-run", remote)
-	cmd.Dir = dir
-	return cmd.Run()
 }
 
 // getCommitHash gets the commit hash for a branch
