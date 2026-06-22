@@ -18,23 +18,18 @@ var findCmd = &cobra.Command{
 	Long:  `Search for passwords containing the given string anywhere in their path.`,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		flat, _ := cmd.Flags().GetBool("flat")
-		noTree, _ := cmd.Flags().GetBool("no-tree")
-		return findPasswords(args[0], flat || noTree)
+		// Default to flat view for pass find command (as per user requirement)
+		return findPasswords(args[0], true)
 	},
 }
 
 // Flags for find command
 var (
 	ignoreCaseFlag bool
-	flatFlag       bool
-	noTreeFlag     bool
 )
 
 func addFindCmd() {
 	findCmd.Flags().BoolVarP(&ignoreCaseFlag, "ignore-case", "i", false, "Case-insensitive search")
-	findCmd.Flags().BoolVarP(&flatFlag, "flat", "f", false, "Output flat list instead of tree")
-	findCmd.Flags().BoolVar(&noTreeFlag, "no-tree", false, "Output flat list instead of tree")
 	rootCmd.AddCommand(findCmd)
 }
 
@@ -145,22 +140,9 @@ func findPasswords(searchString string, flat bool) error {
 		}
 	}
 
-	// Print results
-	if flat {
-		// Original flat list output
-		for _, result := range results {
-			fmt.Println(result)
-		}
-	} else {
-		// Tree view output
-		if len(results) > 0 {
-			treeRoot := tree.BuildTreeFromPaths(results)
-			// Render each top-level child with empty prefix
-			for i := range treeRoot.Children {
-				isLast := i == len(treeRoot.Children)-1
-				renderTreeNode(treeRoot.Children[i], "", isLast)
-			}
-		}
+	// Print results - always use flat view as per user requirement
+	for _, result := range results {
+		fmt.Println(result)
 	}
 
 	return nil

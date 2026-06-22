@@ -10,11 +10,12 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	"github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/mandu/tools/pass/cmd/tree"
 	"github.com/mandu/tools/pass/pkg/fuzzy"
 	"github.com/mandu/tools/pass/pkg/git"
 )
 
-// item represents a password entry in the list
+// item represents a password entry in the list (flat view)
 type item struct {
 	path         string
 	matchScore   int
@@ -30,9 +31,91 @@ func (i item) Description() string { return "" }
 // FilterValue returns the value used for filtering
 func (i item) FilterValue() string { return i.path }
 
+
+
+// treeFormattedItem extends item to support tree view display
+type treeFormattedItem struct {
+	item
+	displayName string // Tree-formatted display name
+}
+
+// Title returns the tree-formatted display name
+func (t treeFormattedItem) Title() string { return t.displayName }
+
 // passwordDelegate is a custom delegate for rendering password items
 type passwordDelegate struct {
 	list.DefaultDelegate
+}
+
+// CreateTreeFormattedItems creates list items with tree formatting
+func CreateTreeFormattedItems(passwords []string) []list.Item {
+	if len(passwords) == 0 {
+		return []list.Item{}
+	}
+	
+	// Build tree from all passwords
+	treeRoot := tree.BuildTreeFromPaths(passwords)
+	
+	// Flatten tree to items with tree formatting
+	var items []list.Item
+	if treeRoot.Name == "" && len(treeRoot.Children) > 0 {
+		// Root is empty container, process its children
+		for i := range treeRoot.Children {
+			isLast := i == len(treeRoot.Children)-1
+			flattenTreeToFormattedItems(treeRoot.Children[i], "", isLast, "", &items)
+		}
+	} else {
+		// Single node
+		flattenTreeToFormattedItems(treeRoot, "", false, "", &items)
+	}
+	
+	return items
+}
+
+// flattenTreeToFormattedItems recursively flattens the tree to formatted items
+func flattenTreeToFormattedItems(node *tree.TreeNode, prefix string, isLast bool, parentPath string, items *[]list.Item) {
+	// Build the full path for this node
+	nodePath := parentPath
+	if parentPath != "" {
+		nodePath += "/"
+	}
+	nodePath += node.Name
+	
+	if node.IsDir {
+		// For directories, process children
+		// Build child prefix
+		childPrefix := prefix
+		if isLast {
+			childPrefix += "    "
+		} else {
+			childPrefix += "\u2502   " // │   
+		}
+		
+		// Process children
+		for i, child := range node.Children {
+			childIsLast := i == len(node.Children)-1
+			flattenTreeToFormattedItems(child, childPrefix, childIsLast, nodePath, items)
+		}
+	} else {
+		// For files (leaf nodes), create formatted item
+		// Determine the connector for this file
+		connector := "\u2514\u2500\u2500 " // └──
+		if !isLast {
+			connector = "\u251C\u2500\u2500 " // ├──
+		}
+		
+		// Format the display name with tree structure
+		displayName := prefix + connector + node.Name
+		
+		// Create formatted item with full path
+		formattedItem := treeFormattedItem{
+			item: item{
+				path: nodePath, // Full path for filtering and selection
+			},
+			displayName: displayName,
+		}
+		*items = append(*items, formattedItem)
+	}
 }
 
 // NewPasswordDelegate creates a new password delegate
@@ -50,14 +133,24 @@ func (d passwordDelegate) Spacing() int { return 0 }
 
 // Render renders a password item with match highlighting
 func (d passwordDelegate) Render(w io.Writer, m list.Model, index int, listItem list.Item) {
-	i, ok := listItem.(item)
-	if !ok {
-		return
+	// Handle both item and treeFormattedItem types
+	var matchIndices []int
+	var displayName string
+	
+	switch v := listItem.(type) {
+	case item:
+		matchIndices = v.matchIndices
+		displayName = v.path // For flat view, display the path
+	case treeFormattedItem:
+		matchIndices = v.matchIndices
+		displayName = v.displayName // For tree view, display the formatted name
+	default:
+		return // Unknown type, skip rendering
 	}
-
+	
 	// Get the current selection
 	isSelected := index == m.Index()
-
+	
 	// Create the base string
 	var prefix string
 	if isSelected {
@@ -65,13 +158,13 @@ func (d passwordDelegate) Render(w io.Writer, m list.Model, index int, listItem 
 	} else {
 		prefix = "  "
 	}
-
+	
 	// Apply match highlighting if we have match indices
-	displayPath := i.path
-	if len(i.matchIndices) > 0 {
-		displayPath = highlightMatches(i.path, i.matchIndices)
+	displayPath := displayName
+	if len(matchIndices) > 0 {
+		displayPath = highlightMatches(displayName, matchIndices)
 	}
-
+	
 	// Apply selection style if selected
 	if isSelected {
 		// Remove ANSI codes for width calculation
@@ -170,6 +263,10 @@ func truncate(s string, length int) string {
 	return s[:length-3] + "..."
 }
 
+
+
+
+
 // Model is the main model for the fuzzy search TUI
 type Model struct {
 	// Bubble Tea list component
@@ -187,6 +284,8 @@ type Model struct {
 	// Git status
 	gitStatus    git.GitStatus
 	gitStatusErr error
+	
+
 	
 	// State
 	error          error
@@ -456,25 +555,22 @@ func (m *Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m *Model) filterList() {
 	query := m.input.Value()
 	
-	// Use fuzzy matching
-	var filtered []list.Item
+	// Use fuzzy matching on all passwords
+	var matchedPaths []string
 	if query == "" {
 		// Empty query: show all passwords
-		filtered = make([]list.Item, len(m.allPasswords))
-		for i, path := range m.allPasswords {
-			filtered[i] = item{path: path}
-		}
+		matchedPaths = m.allPasswords
 	} else {
 		// Filter using fuzzy matching
 		results := fuzzy.Filter(query, m.allPasswords)
-		filtered = make([]list.Item, len(results))
+		matchedPaths = make([]string, len(results))
 		for i, result := range results {
-			filtered[i] = item{
-				path:         result.Path,
-				matchIndices: result.MatchIndices,
-			}
+			matchedPaths[i] = result.Path
 		}
 	}
+	
+	// Create filtered items with tree formatting
+	filtered := CreateTreeFormattedItems(matchedPaths)
 	
 	m.list.SetItems(filtered)
 }
@@ -547,11 +643,8 @@ func NewModel(passwords []string, mode FuzzySearchMode) *Model {
 	input.CharLimit = 100
 	input.Width = 50
 	
-	// Create list
-	items := make([]list.Item, len(passwords))
-	for i, path := range passwords {
-		items[i] = item{path: path}
-	}
+	// Create list items with tree formatting
+	items := CreateTreeFormattedItems(passwords)
 	
 	delegate := NewPasswordDelegate()
 	listModel := list.New(items, delegate, 0, 0)
@@ -571,6 +664,7 @@ func NewModel(passwords []string, mode FuzzySearchMode) *Model {
 		input:         input,
 		mode:          mode,
 		allPasswords:  passwords,
+
 		gitStatus:     git.GitStatus{IsGitRepo: false},
 		gitStatusErr:  nil,
 		quitting:      false,

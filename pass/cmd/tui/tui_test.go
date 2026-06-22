@@ -130,9 +130,19 @@ func TestFilterList(t *testing.T) {
 	
 	// Check it's the right password
 	if len(filtered) > 0 {
-		item := filtered[0].(item)
-		if !strings.Contains(item.path, "gmail") {
-			t.Errorf("Filtered item %q doesn't contain 'gmail'", item.path)
+		// Try to cast to treeFormattedItem first, then fall back to item
+		var path string
+		switch v := filtered[0].(type) {
+		case treeFormattedItem:
+			path = v.path
+		case item:
+			path = v.path
+		default:
+			t.Errorf("Unknown item type: %T", filtered[0])
+			return
+		}
+		if !strings.Contains(path, "gmail") {
+			t.Errorf("Filtered item %q doesn't contain 'gmail'", path)
 		}
 	}
 }
