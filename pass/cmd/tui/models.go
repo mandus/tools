@@ -189,12 +189,12 @@ type Model struct {
 	gitStatusErr error
 	
 	// State
-	loading   bool
-	error     error
-	quitting  bool
-	selected  string
-	width     int
-	height    int
+	error          error
+	quitting       bool
+	selected       string
+	width          int
+	height         int
+	gitStatusReady bool // Indicates if git status has been loaded
 }
 
 // getTitle returns the title for the given mode
@@ -262,7 +262,11 @@ func getGitStatusLine(status git.GitStatus) string {
 
 // Init initializes the model
 func (m *Model) Init() tea.Cmd {
-	return textinput.Blink
+	// Start async git status check
+	return tea.Batch(
+		textinput.Blink,
+		loadGitStatusCmd(getPasswordStoreDir()),
+	)
 }
 
 // Update handles messages and updates the model
@@ -303,10 +307,11 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.error = fmt.Errorf("git push failed: %v", msg.err)
 		} else {
 			// Refresh git status and password list after successful push
-			m.gitStatus = git.GetGitStatus(getPasswordStoreDir())
+			m.gitStatusReady = false
+			cmds = append(cmds, loadGitStatusCmd(getPasswordStoreDir()))
 			m.refreshPasswordList()
 		}
-		return m, nil
+		return m, tea.Batch(cmds...)
 		
 	case gitUpdateResult:
 		// Handle git update result
@@ -314,9 +319,17 @@ func (m *Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.error = fmt.Errorf("git update failed: %v", msg.err)
 		} else {
 			// Refresh git status and password list after successful update
-			m.gitStatus = git.GetGitStatus(getPasswordStoreDir())
+			m.gitStatusReady = false
+			cmds = append(cmds, loadGitStatusCmd(getPasswordStoreDir()))
 			m.refreshPasswordList()
 		}
+		return m, tea.Batch(cmds...)
+		
+	case gitStatusResult:
+		// Handle async git status result
+		m.gitStatus = msg.status
+		m.gitStatusErr = msg.err
+		m.gitStatusReady = true
 		return m, nil
 	}
 	
@@ -334,10 +347,6 @@ func (m *Model) View() string {
 		return ""
 	}
 	
-	if m.loading {
-		return "Loading passwords...\n"
-	}
-	
 	if m.error != nil {
 		return "Error: " + m.error.Error() + "\n"
 	}
@@ -349,17 +358,18 @@ func (m *Model) View() string {
 	view += getTitle(m.mode) + "\n"
 	
 	// Git status line (if available)
-	if m.gitStatus.IsGitRepo {
+	if !m.gitStatusReady {
+		view += "Git: loading...\n"
+	} else if m.gitStatusErr != nil {
+		view += fmt.Sprintf("Git: %v\n", m.gitStatusErr)
+	} else if m.gitStatus.IsGitRepo {
 		gitStatusLine := getGitStatusLine(m.gitStatus)
 		if gitStatusLine != "" {
 			view += gitStatusLine + "\n"
 		}
-	} else if m.gitStatusErr != nil {
-		view += fmt.Sprintf("Git: %v\n", m.gitStatusErr)
 	} else {
 		view += "Git: not a repository\n"
 	}
-	view += ""
 	
 	// Input prompt and value
 	prompt := getPrompt(m.mode)
@@ -411,9 +421,9 @@ func (m *Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, handleGitUpdate
 		
 	case msg.String() == "ctrl+r":
-		// Refresh git status
-		m.gitStatus = git.GetGitStatus(getPasswordStoreDir())
-		return m, nil
+		// Refresh git status asynchronously
+		m.gitStatusReady = false
+		return m, loadGitStatusCmd(getPasswordStoreDir())
 		
 	// List navigation keys - pass to list
 	case msg.String() == "up" || msg.String() == "down" || msg.String() == "pageup" || msg.String() == "pagedown":
@@ -500,6 +510,20 @@ type gitUpdateResult struct {
 	err error
 }
 
+// gitStatusResult represents the result of async git status loading
+type gitStatusResult struct {
+	status git.GitStatus
+	err    error
+}
+
+// loadGitStatusCmd creates a command to load git status asynchronously
+func loadGitStatusCmd(dir string) tea.Cmd {
+	return func() tea.Msg {
+		status := git.GetGitStatus(dir)
+		return gitStatusResult{status: status, err: nil}
+	}
+}
+
 // handleGitPush attempts to push changes to the remote
 func handleGitPush() tea.Msg {
 	storeDir := getPasswordStoreDir()
@@ -541,17 +565,18 @@ func NewModel(passwords []string, mode FuzzySearchMode) *Model {
 	listModel.SetWidth(76)
 	listModel.SetHeight(15)
 	
-	// Create model
+	// Create model with empty git status (will be loaded async)
 	model := &Model{
-		list:         listModel,
-		input:        input,
-		mode:         mode,
-		allPasswords: passwords,
-		gitStatus:    git.GetGitStatus(getPasswordStoreDir()),
-		loading:      false,
-		quitting:     false,
-		width:        80,
-		height:       24,
+		list:          listModel,
+		input:         input,
+		mode:          mode,
+		allPasswords:  passwords,
+		gitStatus:     git.GitStatus{IsGitRepo: false},
+		gitStatusErr:  nil,
+		quitting:      false,
+		gitStatusReady: false,
+		width:         80,
+		height:        24,
 	}
 	
 	return model
