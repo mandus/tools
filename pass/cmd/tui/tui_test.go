@@ -24,8 +24,8 @@ func TestNewModel(t *testing.T) {
 		t.Errorf("Expected %d passwords, got %d", len(passwords), len(model.allPasswords))
 	}
 	
-	if model.loading {
-		t.Error("Model should not be loading initially")
+	if model.gitStatusReady {
+		t.Error("Model gitStatusReady should be false initially")
 	}
 	
 	if model.quitting {

@@ -192,6 +192,12 @@ Search:
 4. **Merge Conflicts**: For update, warn about conflicts, provide instructions
 5. **Authentication Errors**: For push, prompt for credentials if needed
 
+### Performance Considerations
+
+1. **Async Loading**: Git status checking (especially `git fetch`) should not block the TUI. The status should load asynchronously while allowing user interaction.
+2. **Non-Blocking Operations**: All git operations in the TUI (push, update, refresh) should be non-blocking and allow continued interaction.
+3. **Visual Feedback**: Provide clear visual feedback (e.g., "loading..." indicator) when git operations are in progress.
+
 ### Dependencies
 
 The implementation will use:
@@ -345,7 +351,8 @@ func setupTestGitRepo(t *testing.T) (string, func()) {
 - [x] All tests pass
 - [x] No personal data in tests or code
 - [x] Documentation updated (README, specs)
-- [ ] Password list refreshes after git operations
+- [x] Password list refreshes after git operations
+- [x] Git status loads asynchronously in TUI (non-blocking)
 
 ## Appendix
 

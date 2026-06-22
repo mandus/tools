@@ -165,6 +165,37 @@ PASSWORD_STORE_DIR=/tmp/test_pass_git ./pass git
 #         Uncommitted changes present
 ```
 
+## Performance Improvements
+
+### Async Git Status Loading in TUI
+
+**Problem**: After adding git integration, the TUI startup time was significantly slower because `GetGitStatus()` performs a `git fetch` operation synchronously, which is a network operation that can take several seconds.
+
+**Solution**: Implemented asynchronous git status loading in the TUI:
+
+1. **Initial Load**: The TUI now loads immediately with a "Git: loading..." indicator
+2. **Background Loading**: Git status is fetched asynchronously in a separate goroutine
+3. **Non-Blocking UI**: Users can navigate and select passwords while git status is loading
+4. **Automatic Updates**: Git status is automatically displayed when the async operation completes
+5. **Async Refresh**: All git operations (push, update, refresh) now trigger async status reloads
+
+**Technical Implementation**:
+- Added `gitStatusReady` field to `Model` struct to track loading state
+- Modified `NewModel()` to initialize with empty git status
+- Added `loadGitStatusCmd()` function that returns a `tea.Cmd` for async execution
+- Modified `Init()` to start the async git status load
+- Added `gitStatusResult` message type to handle async results
+- Updated `Update()` to handle the async result message
+- Updated `View()` to show "loading..." while status is being fetched
+- Modified all git operation handlers to use async refresh
+
+**Benefits**:
+- ✅ TUI appears instantly, even with slow network or large git repos
+- ✅ Users can interact with the password list immediately
+- ✅ Git status appears automatically when ready
+- ✅ No blocking operations in the UI thread
+- ✅ All git operations maintain async behavior
+
 ## Known Limitations
 
 1. **Ahead/Behind Detection**: The `getSyncStatus` function uses `git rev-list --left-right` which requires proper upstream tracking. This may not work correctly if:
@@ -181,6 +212,9 @@ PASSWORD_STORE_DIR=/tmp/test_pass_git ./pass git
 ## Future Enhancements
 
 1. **Improve Ahead/Behind Detection**: Use `git fetch` first to ensure remote tracking is up to date.
+2. **Add Timeout to Git Fetch**: Consider adding a timeout to the git fetch operation in `getSyncStatus` so that if it takes too long, the TUI can fall back to using stale local refs.
+3. **Progress Indicator**: Add a spinner or progress indicator for better visual feedback during git status loading.
+4. **Status Caching**: Cache git status results to avoid repeated fetches within a short time period.
 2. **Add Confirmation Dialogs**: For push operations in TUI, add confirmation before pushing.
 3. **Better Error Messages**: Provide more actionable error messages for git operations.
 4. **Git Config Integration**: Respect git configuration for default remote/branch.
