@@ -58,14 +58,14 @@ func CreateTreeFormattedItems(passwords []string) []list.Item {
 	
 	// Flatten tree to items with tree formatting
 	var items []list.Item
-	if treeRoot.Name == "" && len(treeRoot.Children) > 0 {
-		// Root is empty container, process its children
+	if treeRoot != nil && treeRoot.Name == "" {
+		// Root is empty container, always process its children
 		for i := range treeRoot.Children {
 			isLast := i == len(treeRoot.Children)-1
 			flattenTreeToFormattedItems(treeRoot.Children[i], "", isLast, "", &items)
 		}
-	} else {
-		// Single node
+	} else if treeRoot != nil {
+		// Root has a name (shouldn't happen with BuildTreeFromPaths, but handle it)
 		flattenTreeToFormattedItems(treeRoot, "", false, "", &items)
 	}
 	
@@ -81,8 +81,32 @@ func flattenTreeToFormattedItems(node *tree.TreeNode, prefix string, isLast bool
 	}
 	nodePath += node.Name
 	
+	// Determine the connector for this node
+	connector := "\u2514\u2500\u2500 " // └──
+	if !isLast {
+		connector = "\u251C\u2500\u2500 " // ├──
+	}
+	
+	// Format the display name with tree structure
+	displayName := prefix + connector + node.Name
+	
+	// Add / suffix for directories
 	if node.IsDir {
-		// For directories, process children
+		displayName += "/"
+	}
+	
+	// Create item for all nodes (both directories and passwords)
+	// Note: A node can be both a password (IsPassword=true) and a directory (IsDir=true)
+	formattedItem := treeFormattedItem{
+		item: item{
+			path: nodePath,
+		},
+		displayName: displayName,
+	}
+	*items = append(*items, formattedItem)
+	
+	// Process children for directories or nodes with children
+	if len(node.Children) > 0 {
 		// Build child prefix
 		childPrefix := prefix
 		if isLast {
@@ -96,25 +120,6 @@ func flattenTreeToFormattedItems(node *tree.TreeNode, prefix string, isLast bool
 			childIsLast := i == len(node.Children)-1
 			flattenTreeToFormattedItems(child, childPrefix, childIsLast, nodePath, items)
 		}
-	} else {
-		// For files (leaf nodes), create formatted item
-		// Determine the connector for this file
-		connector := "\u2514\u2500\u2500 " // └──
-		if !isLast {
-			connector = "\u251C\u2500\u2500 " // ├──
-		}
-		
-		// Format the display name with tree structure
-		displayName := prefix + connector + node.Name
-		
-		// Create formatted item with full path
-		formattedItem := treeFormattedItem{
-			item: item{
-				path: nodePath, // Full path for filtering and selection
-			},
-			displayName: displayName,
-		}
-		*items = append(*items, formattedItem)
 	}
 }
 

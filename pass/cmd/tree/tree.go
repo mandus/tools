@@ -7,17 +7,19 @@ import (
 
 // TreeNode represents a node in a hierarchical tree structure.
 type TreeNode struct {
-	Name     string
-	IsDir    bool
-	Children []*TreeNode
+	Name       string
+	IsDir      bool
+	IsPassword bool // True if this node represents a password (i.e., was the last component of a path)
+	Children   []*TreeNode
 }
 
 // NewTreeNode creates a new tree node with the given name and directory flag.
 func NewTreeNode(name string, isDir bool) *TreeNode {
 	return &TreeNode{
-		Name:     name,
-		IsDir:    isDir,
-		Children: []*TreeNode{},
+		Name:       name,
+		IsDir:      isDir,
+		IsPassword: false,
+		Children:   []*TreeNode{},
 	}
 }
 
@@ -36,9 +38,17 @@ func (n *TreeNode) AddChild(child *TreeNode) {
 
 // FindOrCreateChild finds a child by name or creates it if not found.
 // Returns the child node (existing or newly created).
+// If the child already exists and isDir is true, the existing node's IsDir flag
+// is updated to true to handle the case where a path component is both a file
+// and a directory (e.g., "dji-mimo" file and "dji-mimo/subdir" directory).
 func (n *TreeNode) FindOrCreateChild(name string, isDir bool) *TreeNode {
 	for _, child := range n.Children {
 		if child.Name == name {
+			// Update IsDir to true if we're adding children under this node
+			// This handles the case where the same name is both a file and a directory
+			if isDir {
+				child.IsDir = true
+			}
 			return child
 		}
 	}
@@ -92,8 +102,15 @@ func BuildTreeFromPaths(paths []string) *TreeNode {
 		// Remove .gpg extension if present
 		path = strings.TrimSuffix(path, ".gpg")
 
-		// Split into path components
+		// Split into path components and filter out empty ones
 		components := strings.Split(path, "/")
+		var nonEmptyComponents []string
+		for _, comp := range components {
+			if comp != "" {
+				nonEmptyComponents = append(nonEmptyComponents, comp)
+			}
+		}
+		components = nonEmptyComponents
 
 		// Build tree structure from components
 		current := root
@@ -101,6 +118,10 @@ func BuildTreeFromPaths(paths []string) *TreeNode {
 			// Only the last component is a file, others are directories
 			isDir := i < len(components)-1
 			current = current.FindOrCreateChild(component, isDir)
+			// Mark the last component (the password file) as a password
+			if !isDir {
+				current.IsPassword = true
+			}
 		}
 	}
 

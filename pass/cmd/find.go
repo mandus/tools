@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/mandu/tools/pass/cmd/tree"
@@ -18,8 +19,9 @@ var findCmd = &cobra.Command{
 	Long:  `Search for passwords containing the given string anywhere in their path.`,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Default to flat view for pass find command (as per user requirement)
-		return findPasswords(args[0], true)
+		// Default to tree view for pass find command, flat view for 'ls' argument
+		useFlat := args[0] == "ls"
+		return findPasswords(args[0], useFlat)
 	},
 }
 
@@ -81,6 +83,53 @@ func findPasswords(searchString string, flat bool) error {
 		return nil
 	}
 
+	// Special case: "ls" should show all passwords in flat view
+	if searchString == "ls" {
+		// Collect all passwords
+		var results []string
+		err := filepath.Walk(storeDir, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+
+			// Skip .git directory
+			if info.IsDir() && info.Name() == ".git" {
+				return filepath.SkipDir
+			}
+
+			// Only process .gpg files
+			if !info.IsDir() && strings.HasSuffix(info.Name(), ".gpg") {
+				// Get relative path from store directory
+				relPath, err := filepath.Rel(storeDir, path)
+				if err != nil {
+					return err
+				}
+
+				// Normalize path separators
+				relPath = filesystem.NormalizePathForDisplay(relPath)
+
+				// Strip .gpg extension
+				passwordPath := strings.TrimSuffix(relPath, ".gpg")
+				results = append(results, passwordPath)
+			}
+
+			return nil
+		})
+		
+		if err != nil {
+			return fmt.Errorf("pass: failed to walk directory: %v", err)
+		}
+
+		// Sort results
+		sort.Strings(results)
+
+		// Print results in flat view
+		for _, result := range results {
+			fmt.Println(result)
+		}
+		return nil
+	}
+
 	// Prepare search string
 	target := searchString
 	if ignoreCaseFlag {
@@ -132,17 +181,24 @@ func findPasswords(searchString string, flat bool) error {
 	}
 
 	// Sort results
-	for i := 0; i < len(results)-1; i++ {
-		for j := 0; j < len(results)-i-1; j++ {
-			if results[j] > results[j+1] {
-				results[j], results[j+1] = results[j+1], results[j]
+	sort.Strings(results)
+
+	// Print results
+	if flat {
+		// Flat view
+		for _, result := range results {
+			fmt.Println(result)
+		}
+	} else {
+		// Tree view
+		if len(results) > 0 {
+			treeRoot := tree.BuildTreeFromPaths(results)
+			// Render each top-level child with empty prefix
+			for i := range treeRoot.Children {
+				isLast := i == len(treeRoot.Children)-1
+				renderTreeNode(treeRoot.Children[i], "", isLast)
 			}
 		}
-	}
-
-	// Print results - always use flat view as per user requirement
-	for _, result := range results {
-		fmt.Println(result)
 	}
 
 	return nil

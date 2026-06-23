@@ -16,19 +16,19 @@ func TestCreateTreeFormattedItems(t *testing.T) {
 		{
 			name:     "Single level paths",
 			passwords: []string{"email/gmail.com", "social/twitter.com"},
-			wantCount: 2,
-			contains:  []string{"gmail.com", "twitter.com"},
+			wantCount: 4, // email/, gmail.com, social/, twitter.com
+			contains:  []string{"gmail.com", "twitter.com", "email/", "social/"},
 		},
 		{
 			name:     "Nested paths",
 			passwords: []string{"email/gmail.com", "email/work/vpn.com"},
-			wantCount: 2,
-			contains:  []string{"gmail.com", "vpn.com"},
+			wantCount: 4, // email/, gmail.com, work/, vpn.com
+			contains:  []string{"gmail.com", "vpn.com", "email/", "work/"},
 		},
 		{
 			name:     "Tree characters",
 			passwords: []string{"a/1.com", "a/2.com", "b/3.com"},
-			wantCount: 3,
+			wantCount: 5, // a/, 1.com, 2.com, b/, 3.com
 			contains:  []string{"├──", "└──"}, // Should contain tree characters
 		},
 		{
@@ -108,27 +108,34 @@ func TestTreeViewFiltering(t *testing.T) {
 	// Create model with tree view
 	model := NewModel(passwords, FuzzyModeShow)
 
-	// Initially should show all items
+	// Initially should show all tree nodes (directories + password files)
+	// email/gmail.com -> email/, gmail.com
+	// email/work.com -> email/, work.com
+	// social/twitter.com -> social/, twitter.com
+	// Total: email/, gmail.com, work.com, social/, twitter.com = 5 items
 	initialItems := model.list.Items()
-	if len(initialItems) != len(passwords) {
-		t.Errorf("Expected %d initial items, got %d", len(passwords), len(initialItems))
+	expectedCount := 5
+	if len(initialItems) != expectedCount {
+		t.Errorf("Expected %d initial items, got %d", expectedCount, len(initialItems))
 	}
 
 	// Set a query that should match gmail
 	model.input.SetValue("gmail")
 	model.filterList()
 
-	// Should only show gmail item
+	// Should show gmail.com and its parent email/
 	filtered := model.list.Items()
-	if len(filtered) != 1 {
-		t.Errorf("Expected 1 filtered item for 'gmail', got %d", len(filtered))
+	if len(filtered) != 2 {
+		t.Errorf("Expected 2 filtered items for 'gmail' (email/ and gmail.com), got %d", len(filtered))
 		return
 	}
 
-	// The filtered item should have gmail in its path
-	path := filtered[0].FilterValue()
-	if !strings.Contains(path, "gmail") {
-		t.Errorf("Filtered item path %q doesn't contain 'gmail'", path)
+	// The filtered items should have gmail in their path
+	for i, item := range filtered {
+		path := item.FilterValue()
+		if !strings.Contains(path, "gmail") && !strings.Contains(path, "email") {
+			t.Errorf("Filtered item %d path %q doesn't contain 'gmail' or 'email'", i, path)
+		}
 	}
 }
 
@@ -137,7 +144,12 @@ func TestTreeViewSelection(t *testing.T) {
 	passwords := []string{"email/gmail.com", "social/twitter.com"}
 	model := NewModel(passwords, FuzzyModeShow)
 
-	// Select the first item
+	// The tree structure will be:
+	// email/ -> gmail.com
+	// social/ -> twitter.com
+	// So items are: email/, gmail.com, social/, twitter.com
+
+	// Select the first item (email/)
 	model.list.Select(0)
 
 	// Get selected item
@@ -152,15 +164,17 @@ func TestTreeViewSelection(t *testing.T) {
 		t.Error("Selected item has empty path")
 	}
 
-	// The path should be one of the original passwords
+	// The path should be one of the tree nodes (either a directory or a password)
+	// Since we're showing all nodes in the tree, it could be a directory path
+	validPaths := []string{"email", "email/gmail.com", "social", "social/twitter.com"}
 	validPath := false
-	for _, p := range passwords {
+	for _, p := range validPaths {
 		if path == p {
 			validPath = true
 			break
 		}
 	}
 	if !validPath {
-		t.Errorf("Selected path %q is not one of the original passwords", path)
+		t.Errorf("Selected path %q is not one of the valid tree node paths", path)
 	}
 }

@@ -113,19 +113,24 @@ func TestFilterList(t *testing.T) {
 	passwords := []string{"email/gmail.com", "social/github.com", "work/vpn"}
 	model := NewModel(passwords, FuzzyModeShow)
 	
-	// Initially should show all passwords
-	if model.list.Items() == nil || len(model.list.Items()) != len(passwords) {
-		t.Errorf("Expected %d items initially, got %d", len(passwords), len(model.list.Items()))
+	// Initially should show all tree nodes (directories + password files)
+	// email/gmail.com -> email/, gmail.com
+	// social/github.com -> social/, github.com
+	// work/vpn -> work/, vpn
+	// Total: 6 items
+	expectedInitialCount := 6
+	if model.list.Items() == nil || len(model.list.Items()) != expectedInitialCount {
+		t.Errorf("Expected %d items initially, got %d", expectedInitialCount, len(model.list.Items()))
 	}
 	
 	// Set a query that filters the list
 	model.input.SetValue("gmail")
 	model.filterList()
 	
-	// Should only show gmail password
+	// Should show email/ and gmail.com (2 items)
 	filtered := model.list.Items()
-	if len(filtered) != 1 {
-		t.Errorf("Expected 1 filtered item, got %d", len(filtered))
+	if len(filtered) != 2 {
+		t.Errorf("Expected 2 filtered items (email/ and gmail.com), got %d", len(filtered))
 	}
 	
 	// Check it's the right password
@@ -141,8 +146,8 @@ func TestFilterList(t *testing.T) {
 			t.Errorf("Unknown item type: %T", filtered[0])
 			return
 		}
-		if !strings.Contains(path, "gmail") {
-			t.Errorf("Filtered item %q doesn't contain 'gmail'", path)
+		if !strings.Contains(path, "gmail") && !strings.Contains(path, "email") {
+			t.Errorf("Filtered item %q doesn't contain 'gmail' or 'email'", path)
 		}
 	}
 }
