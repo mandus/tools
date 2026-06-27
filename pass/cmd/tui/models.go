@@ -20,6 +20,8 @@ type item struct {
 	path         string
 	matchScore   int
 	matchIndices []int
+	isDir        bool
+	isPassword   bool
 }
 
 // Title returns the title of the item (the password path)
@@ -72,6 +74,18 @@ func CreateTreeFormattedItems(passwords []string) []list.Item {
 	return items
 }
 
+// findFirstPasswordUnderPath finds the first password in the list that is under the given directory path
+func findFirstPasswordUnderPath(items []list.Item, dirPath string) string {
+	for _, listItem := range items {
+		if treeItem, ok := listItem.(treeFormattedItem); ok {
+			if treeItem.isPassword && strings.HasPrefix(treeItem.path, dirPath+"/") {
+				return treeItem.path
+			}
+		}
+	}
+	return ""
+}
+
 // flattenTreeToFormattedItems recursively flattens the tree to formatted items
 func flattenTreeToFormattedItems(node *tree.TreeNode, prefix string, isLast bool, parentPath string, items *[]list.Item) {
 	// Build the full path for this node
@@ -99,7 +113,9 @@ func flattenTreeToFormattedItems(node *tree.TreeNode, prefix string, isLast bool
 	// Note: A node can be both a password (IsPassword=true) and a directory (IsDir=true)
 	formattedItem := treeFormattedItem{
 		item: item{
-			path: nodePath,
+			path:       nodePath,
+			isDir:      node.IsDir,
+			isPassword: node.IsPassword,
 		},
 		displayName: displayName,
 	}
@@ -499,8 +515,21 @@ func (m *Model) handleKeyMsg(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// Enter - select
 	case msg.String() == "enter":
 		if m.list.SelectedItem() != nil {
-			selectedItem := m.list.SelectedItem().(item)
-			m.selected = selectedItem.path
+			selectedItem := m.list.SelectedItem().(treeFormattedItem)
+			selectedPath := selectedItem.item.path
+			
+			// If selected item is a directory, find the first password under it
+			if selectedItem.item.isDir && !selectedItem.item.isPassword {
+				firstPassword := findFirstPasswordUnderPath(m.list.Items(), selectedPath)
+				if firstPassword != "" {
+					selectedPath = firstPassword
+				} else {
+					// No password under this directory, do nothing
+					return m, nil
+				}
+			}
+			
+			m.selected = selectedPath
 			m.quitting = true
 			return m, tea.Quit
 		}

@@ -53,13 +53,14 @@ The `pass find <string>` command should continue to use flat view as currently i
 So that I can better understand the directory hierarchy of my password store.
 
 **Acceptance Criteria**:
-- [ ] TUI fuzzy finder displays passwords in tree structure
-- [ ] Tree structure accurately reflects the directory hierarchy
-- [ ] Tree uses box-drawing characters (├──, └──, │)
-- [ ] Directories are shown with trailing `/`
-- [ ] Files are shown without `.gpg` extension
-- [ ] Results are sorted alphabetically at each level
-- [ ] Works in all TUI modes (show, clip, rm, edit)
+- [x] TUI fuzzy finder displays passwords in tree structure
+- [x] Tree structure accurately reflects the directory hierarchy
+- [x] Tree uses box-drawing characters (├──, └──, │)
+- [x] Directories are shown with trailing `/`
+- [x] Files are shown without `.gpg` extension
+- [x] Results are sorted alphabetically at each level
+- [x] Works in all TUI modes (show, clip, rm, edit)
+- [x] Selecting a directory with Enter automatically selects the first password within it
 
 ### As a pass CLI user, I want `pass find` to maintain flat output
 So that my existing scripts and workflows continue to work.
@@ -361,7 +362,7 @@ var TreeViewEnabled = true  // Default to tree view
 **Status**: OPEN - Propose: Let list component handle truncation as it does now
 
 ### OQ-003: Should directories be selectable in tree view?
-**Status**: OPEN - Propose: No, only leaf nodes (password files) should be selectable
+**Status**: **RESOLVED** - Directories are displayed in the tree structure but when selected (Enter key), the TUI automatically selects the first password file within that directory. This allows users to see the full hierarchy while ensuring only actual password files are actionable.
 
 ## Success Criteria
 
@@ -437,6 +438,8 @@ The tree view feature has been successfully implemented for the pass TUI fuzzy f
 2. **CLI Flat View**: Modified `pass find` command to use flat view by default
 3. **Tree Formatting**: Reused existing `cmd/tree` package for tree rendering
 4. **Backward Compatibility**: All existing functionality preserved
+5. **Directory Selection**: When Enter is pressed on a directory, automatically selects the first password file within that directory
+6. **Item Metadata**: Added `isDir` and `isPassword` fields to distinguish between directory and password nodes
 
 ### Files Modified
 
