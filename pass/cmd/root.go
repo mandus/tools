@@ -2,7 +2,10 @@
 package cmd
 
 import (
+	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/mandu/tools/pass/cmd/tui"
 	"github.com/spf13/cobra"
@@ -121,4 +124,35 @@ func GetPasswordStoreDir() string {
 // IsClipboardFlagSet returns whether the -c/--clip flag is set
 func IsClipboardFlagSet() bool {
 	return clipFlag
+}
+
+// getPasswordFullPath returns the full path to a password file, trying multiple
+// strategies for cross-platform compatibility. It returns the first path that exists.
+// The path should NOT include the .gpg extension (it will be added).
+func getPasswordFullPath(path string) (string, error) {
+	storeDir := GetPasswordStoreDir()
+	
+	// Normalize the input path: strip .gpg if present, ensure forward slashes
+	filePath := strings.ReplaceAll(path, "\\", "/")
+	if strings.HasSuffix(filePath, ".gpg") {
+		filePath = strings.TrimSuffix(filePath, ".gpg")
+	}
+	filePath += ".gpg"
+	
+	// Normalize store directory to use forward slashes for consistency
+	storeDir = strings.ReplaceAll(storeDir, "\\", "/")
+	
+	// Strategy 1: Use forward slashes (works on both Windows and Unix)
+	fullPath := storeDir + "/" + filePath
+	if _, err := os.Stat(fullPath); err == nil {
+		return fullPath, nil
+	}
+	
+	// Strategy 2: Use filepath.Join for systems that need native separators
+	fullPath = filepath.Join(storeDir, filePath)
+	if _, err := os.Stat(fullPath); err == nil {
+		return fullPath, nil
+	}
+	
+	return "", fmt.Errorf("pass: %s: No such file or directory", path)
 }

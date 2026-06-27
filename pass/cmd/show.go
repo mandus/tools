@@ -3,8 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/mandu/tools/pass/pkg/gpg"
 	"github.com/mandu/tools/pass/pkg/filesystem"
@@ -29,38 +27,11 @@ func addShowCmd() {
 
 // showPassword retrieves and displays a password
 func showPassword(path string) error {
-	storeDir := GetPasswordStoreDir()
-	
-	// Normalize the input path: strip .gpg if present, ensure forward slashes
-	filePath := strings.ReplaceAll(path, "\\", "/")
-	if strings.HasSuffix(filePath, ".gpg") {
-		filePath = strings.TrimSuffix(filePath, ".gpg")
+	fullPath, err := getPasswordFullPath(path)
+	if err != nil {
+		return err
 	}
-	filePath += ".gpg"
-	
-	// Construct full path - try multiple strategies for cross-platform compatibility
-	// Strategy 1: Use filepath.Join with FromSlash (handles path separator conversion)
-	fullPath := filepath.Join(storeDir, filepath.FromSlash(filePath))
-	
-	// Check if file exists
-	if _, err := os.Stat(fullPath); err == nil {
-		return decryptAndDisplay(fullPath, path)
-	}
-	
-	// Strategy 2: Try with forward slashes directly (for Unix-like environments on Windows)
-	fullPath = storeDir + "/" + filePath
-	if _, err := os.Stat(fullPath); err == nil {
-		return decryptAndDisplay(fullPath, path)
-	}
-	
-	// Strategy 3: Try storeDir with forward slashes + path
-	storeDirForward := strings.ReplaceAll(storeDir, "\\", "/")
-	fullPath = storeDirForward + "/" + filePath
-	if _, err := os.Stat(fullPath); err == nil {
-		return decryptAndDisplay(fullPath, path)
-	}
-	
-	return fmt.Errorf("pass: %s: No such file or directory", path)
+	return decryptAndDisplay(fullPath, path)
 }
 
 // decryptAndDisplay handles the decryption and output
@@ -83,6 +54,10 @@ func decryptAndDisplay(fullPath, displayPath string) error {
 	} else {
 		// Print to stdout
 		fmt.Print(password)
+		// Explicitly flush stdout to avoid buffering delay
+		// This is especially important for passwords without trailing newlines
+		// that are piped to other commands
+		_ = os.Stdout.Sync()
 	}
 	
 	return nil
