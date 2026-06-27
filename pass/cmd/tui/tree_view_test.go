@@ -123,7 +123,7 @@ func TestTreeViewFiltering(t *testing.T) {
 	model.input.SetValue("gmail")
 	model.filterList()
 
-	// Should show gmail.com and its parent email/
+	// Should show email/ and gmail.com (2 items)
 	filtered := model.list.Items()
 	if len(filtered) != 2 {
 		t.Errorf("Expected 2 filtered items for 'gmail' (email/ and gmail.com), got %d", len(filtered))
