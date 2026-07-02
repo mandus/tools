@@ -12,6 +12,9 @@ set -eu
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 REPO_ROOT=$(dirname "$SCRIPT_DIR")
+PREFIX=${PREFIX:-$HOME/.local}
+EXT=$(go env GOEXE)
+
 
 cmd=${1:-build}
 
@@ -23,6 +26,11 @@ case "$cmd" in
         echo "Building pass..."
         (cd "$REPO_ROOT/pass" && ./build.sh "$cmd")
         ;;
+	install)
+		echo "Install to $PREFIX"
+		cp $REPO_ROOT/shell/pass$EXT $PREFIX/bin
+		cp $REPO_ROOT/shell/gitprompt$EXT $PREFIX/bin
+		;;
     *)
         echo "Usage: $0 [build|build-all|clean|update-deps]" >&2
         exit 1
