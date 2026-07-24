@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/atotto/clipboard"
 )
 
 func TestNormalizePath(t *testing.T) {
@@ -139,6 +141,52 @@ func TestCopyToClipboard(t *testing.T) {
 	t.Log("Clipboard copy test passed (visual verification needed)")
 }
 
+func TestIsInsideTmux(t *testing.T) {
+	orig, wasSet := os.LookupEnv("TMUX")
+	defer func() {
+		if wasSet {
+			os.Setenv("TMUX", orig)
+		} else {
+			os.Unsetenv("TMUX")
+		}
+	}()
+
+	os.Unsetenv("TMUX")
+	if isInsideTmux() {
+		t.Errorf("isInsideTmux() = true, want false when TMUX is unset")
+	}
+
+	os.Setenv("TMUX", "/tmp/tmux-1000/default,1234,0")
+	if !isInsideTmux() {
+		t.Errorf("isInsideTmux() = false, want true when TMUX is set")
+	}
+}
+
+func TestCopyToTmuxBuffer(t *testing.T) {
+	// This is an integration test: it only runs when actually executed
+	// inside a real tmux session, so it can talk to a live tmux server.
+	if os.Getenv("TMUX") == "" {
+		t.Skip("not running inside tmux")
+	}
+	if _, err := exec.LookPath("tmux"); err != nil {
+		t.Skip("tmux binary not available")
+	}
+
+	testText := "test tmux password 123"
+	if err := copyToTmuxBuffer(testText); err != nil {
+		t.Fatalf("copyToTmuxBuffer failed: %v", err)
+	}
+	defer exec.Command("tmux", "delete-buffer", "-b", tmuxBufferName).Run()
+
+	out, err := exec.Command("tmux", "show-buffer", "-b", tmuxBufferName).Output()
+	if err != nil {
+		t.Fatalf("failed to read back tmux buffer: %v", err)
+	}
+	if got := strings.TrimRight(string(out), "\n"); got != testText {
+		t.Errorf("tmux buffer = %q, want %q", got, testText)
+	}
+}
+
 func TestEnsurePasswordStore(t *testing.T) {
 	// Create a temp directory for testing
 	tempDir, err := os.MkdirTemp("", "pass-test-store")
@@ -159,9 +207,12 @@ func TestEnsurePasswordStore(t *testing.T) {
 	}
 }
 
-// IsClipboardAvailable is a helper for tests
+// IsClipboardAvailable is a helper for tests. It reports whether some
+// clipboard mechanism - a system clipboard utility, or (when running
+// inside tmux) a tmux paste buffer - is usable in the current environment.
 func IsClipboardAvailable() bool {
-	// Simple check - try to run clip command
-	cmd := exec.Command("clip")
-	return cmd.Run() == nil
+	if !clipboard.Unsupported {
+		return true
+	}
+	return isInsideTmux()
 }

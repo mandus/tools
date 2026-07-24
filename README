@@ -16,7 +16,7 @@ Windows-compatible `pass` (password-store) replacement in Go. Manages GPG-encryp
 - Interactive fuzzy search with TUI (Bubble Tea)
 - Git status displayed in TUI
 - Cross-platform (Windows, Linux, macOS)
-- Copy to clipboard support
+- Copy to clipboard support (xclip/xsel on X11, wl-copy on Wayland, pbcopy on macOS, clip.exe on Windows), with tmux paste-buffer integration when running inside tmux
 - Edit existing passwords with your favorite editor
 
 ### Build
@@ -104,6 +104,9 @@ When running `pass`, `pass -c`, `pass rm`, or `pass edit` without arguments, an 
 - Go 1.20+
 - GnuPG (GPG4Win on Windows)
 - Git (optional, for version control)
+- For `pass -c` clipboard support on Linux: `xclip` or `xsel` (X11), or
+  `wl-clipboard` (Wayland). Not required when running inside tmux, which
+  uses its own paste buffer as a fallback.
 
 ---
 

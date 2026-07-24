@@ -152,7 +152,7 @@ This document tracks design decisions made during the specification and implemen
 
 ### [AD-005] Clipboard Implementation
 
-**Status**: Accepted  
+**Status**: Superseded by [AD-012]  
 **Date**: 2026-06-05  
 **Context**: How should clipboard operations be implemented on Windows?
 
@@ -176,6 +176,11 @@ This document tracks design decisions made during the specification and implemen
 - Must handle special characters in passwords
 - Will work in any Windows shell context
 - For cross-platform, may need platform-specific implementations
+
+**Superseded Note (2026-07-25)**: This Windows-only implementation left
+`pass -c` completely broken on Linux (X11/Wayland) and macOS, despite the
+tool advertising cross-platform clipboard support (see `README`). See
+[AD-012] for the replacement.
 
 **Related**: pass-replacement-spec.md (Section 5)
 
@@ -406,6 +411,35 @@ This document tracks design decisions made during the specification and implemen
 - Implementation must check git ignore patterns
 
 **Related**: pass-fuzzy-rm/spec.md (Section 1.6, 8 - OQ-001)
+
+---
+
+### [AD-012] Cross-Platform Clipboard via atotto/clipboard, with tmux Integration
+
+**Status**: Accepted  
+**Date**: 2026-07-25  
+**Context**: [AD-005]'s Windows-only `clip`-command implementation made `pass -c` fail unconditionally on Linux and macOS (bug: `exec: "clip": executable file not found in $PATH`), contradicting the tool's advertised cross-platform clipboard support. Additionally, `pass` is frequently run inside tmux, including over SSH sessions with no X11/Wayland display available to a system clipboard utility.
+
+**Decision**: Replace the hand-rolled Windows-only implementation with [`github.com/atotto/clipboard`](https://github.com/atotto/clipboard) for the system clipboard (`clip.exe`/`powershell.exe` on Windows, `pbcopy`/`pbpaste` on macOS, `wl-copy`/`xclip`/`xsel`/Termux on Linux and other Unix). Additionally, when the `TMUX` environment variable is set, also load the password into a dedicated tmux paste buffer via `tmux load-buffer -w -b pass -`, so pasting works via tmux itself even when no system clipboard utility can reach a display server.
+
+**Rationale**:
+- `atotto/clipboard` was already present in `go.sum` as an indirect, transitive dependency, so promoting it to direct adds no new supply-chain surface.
+- It already implements the exact platform-detection logic (Wayland vs. X11 vs. Windows vs. macOS vs. Termux) that would otherwise need to be hand-rolled and maintained.
+- tmux's `load-buffer -w` forwards the buffer to the terminal via the OSC 52 escape sequence when `set-clipboard` is enabled, which lets a password copied inside a *remote* tmux session (over SSH, no `DISPLAY`) end up on the *local* machine's clipboard without any X11/Wayland forwarding.
+- Reusing a single named tmux buffer (`pass`) avoids polluting tmux's auto-named buffer list on repeated copies.
+
+**Alternatives Considered**:
+1. **Hand-roll platform detection (`xclip`/`xsel`/`wl-copy`/`pbcopy`) ourselves**: Duplicates `atotto/clipboard`'s already-tested logic for no benefit.
+2. **tmux buffer only, no system clipboard**: Would regress Windows/macOS and non-tmux Linux users.
+3. **Require `DISPLAY`/Wayland forwarding over SSH instead of using tmux buffers**: Pushes a configuration burden onto users; many SSH setups do not forward a display.
+
+**Consequences**:
+- New direct dependency: `github.com/atotto/clipboard`.
+- `pass -c` now works out of the box on Linux (X11 and Wayland) and macOS, in addition to Windows.
+- Inside tmux, `pass -c` also works over SSH without display forwarding, pasteable via `prefix` + `]`, and via the system clipboard automatically if `set-clipboard` and OSC 52 are supported.
+- If neither a system clipboard utility nor tmux is available, `pass -c` fails with an actionable error message ("install xclip, xsel, or wl-clipboard") instead of a confusing "executable file not found" message.
+
+**Related**: specs/008-linux-clipboard-fix/spec.md, [AD-005] (superseded)
 
 ---
 
@@ -749,7 +783,7 @@ These decisions have not yet been finalized and need further discussion:
 
 ## Superseded Decisions
 
-None yet.
+- [AD-005] Clipboard Implementation - superseded by [AD-012] Cross-Platform Clipboard via atotto/clipboard, with tmux Integration (2026-07-25). The Windows-only `clip`-command implementation left `pass -c` broken on Linux and macOS.
 
 ---
 

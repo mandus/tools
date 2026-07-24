@@ -8,8 +8,10 @@ All notable changes to the pass tool are documented in this file.
 - **Edit command**: `pass edit <path>` allows editing existing passwords in your favorite editor
 - **Fuzzy search for edit**: `pass edit` without arguments opens fuzzy search to select a password to edit
 - **Edit mode in TUI**: Added support for edit mode in the Bubble Tea TUI
+- **tmux clipboard integration**: When running inside tmux, `pass -c` (and `pass rm -c`/fuzzy clip mode) also loads the password into a dedicated tmux paste buffer (`pass`), pasteable with `prefix` + `]`. If tmux's `set-clipboard` option and the terminal support OSC 52, the password is also forwarded to the local terminal's clipboard, which works even over SSH without X11/Wayland forwarding
 
 ### Fixed
+- **Linux/macOS clipboard support**: `pass -c` previously only worked on Windows (hard-coded `clip` command) and failed on every other platform with `exec: "clip": executable file not found in $PATH`. Clipboard copy/clear now uses the cross-platform `atotto/clipboard` library, supporting `xclip`/`xsel`/`wl-copy` on Linux and `pbcopy` on macOS, in addition to Windows
 - **Insert overwrite prevention**: `pass insert <path>` now fails with error `pass: <path>: Already exists` if the file already exists
 - **List command**: `pass ls` now only lists secret files (`.gpg` files), not directories
 
@@ -53,9 +55,13 @@ All notable changes to the pass tool are documented in this file.
 - `cmd/fuzzy.go` - Added `FuzzyModeEdit` constant and support
 - `cmd/tui/fuzzy.go` - Added `FuzzyModeEdit` constant
 - `cmd/tui/models.go` - Updated getTitle and getPrompt for edit mode
+- `pkg/filesystem/fs.go` - Replaced Windows-only `clip` clipboard implementation with cross-platform `atotto/clipboard`; added tmux paste buffer integration
+- `pkg/filesystem/fs_test.go` - Updated clipboard availability check; added tmux detection/integration tests
+- `go.mod` / `go.sum` - Promoted `github.com/atotto/clipboard` from indirect to direct dependency
 - `README.md` - Updated with edit command documentation
 - `docs/tui.md` - Updated with edit mode
 - `docs/edit-command.md` - New file with detailed edit command docs
+- `docs/pass-decision-log.md` - Superseded AD-005, added AD-012 (cross-platform clipboard + tmux)
 
 ### Files Added
 - `cmd/edit.go`
@@ -65,6 +71,7 @@ All notable changes to the pass tool are documented in this file.
 - `docs/edit-command.md`
 - `specs/pass-edit/spec.md`
 - `specs/pass-edit/tasks.md`
+- `specs/008-linux-clipboard-fix/spec.md`
 
 ## Testing
 
