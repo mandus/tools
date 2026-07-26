@@ -3,6 +3,7 @@ module github.com/mandu/tools/pass
 go 1.24.2
 
 require (
+	github.com/atotto/clipboard v0.1.4
 	github.com/charmbracelet/bubbles v0.16.1
 	github.com/charmbracelet/bubbletea v0.25.0
 	github.com/charmbracelet/lipgloss v0.11.0
@@ -11,7 +12,6 @@ require (
 )
 
 require (
-	github.com/atotto/clipboard v0.1.4 // indirect
 	github.com/aymanbagabas/go-osc52/v2 v2.0.1 // indirect
 	github.com/charmbracelet/x/ansi v0.11.6 // indirect
 	github.com/clipperhouse/displaywidth v0.9.0 // indirect

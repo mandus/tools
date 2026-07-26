@@ -9,7 +9,14 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/atotto/clipboard"
 )
+
+// tmuxBufferName is the name of the dedicated tmux paste buffer that pass
+// uses, so repeated copies overwrite the same buffer instead of
+// accumulating auto-named buffers.
+const tmuxBufferName = "pass"
 
 // NormalizePath converts a path to use the OS-specific separator.
 // On Windows, converts / to \. On Unix, converts \ to /. Also handles path normalization.
@@ -82,33 +89,77 @@ func SecureDelete(filePath string) error {
 }
 
 // CopyToClipboard copies text to the system clipboard.
-// On Windows, uses the built-in `clip` command.
+// Uses clip.exe on Windows, pbcopy on macOS, and wl-copy/xclip/xsel on
+// Linux (Wayland or X11), via the cross-platform atotto/clipboard library.
+//
+// When running inside tmux (the TMUX environment variable is set), the text
+// is also loaded into a dedicated tmux paste buffer so it can be pasted with
+// tmux itself (prefix + ]) even when no system clipboard utility is
+// available, such as over an SSH connection without X11/Wayland forwarding.
+// If tmux's set-clipboard option is enabled and the terminal supports OSC 52,
+// tmux additionally forwards the buffer to the terminal's clipboard.
 func CopyToClipboard(text string) error {
-	cmd := exec.Command("clip")
+	insideTmux := isInsideTmux()
+
+	var tmuxErr error
+	if insideTmux {
+		tmuxErr = copyToTmuxBuffer(text)
+	}
+
+	sysErr := writeToSystemClipboard(text)
+	if sysErr == nil {
+		return nil
+	}
+	if insideTmux && tmuxErr == nil {
+		// System clipboard unavailable (common over SSH without a
+		// forwarded display), but the tmux buffer was updated
+		// successfully, so pasting via tmux still works.
+		return nil
+	}
+	if insideTmux {
+		return fmt.Errorf("failed to write to clipboard: %v (tmux buffer also failed: %v)", sysErr, tmuxErr)
+	}
+	return fmt.Errorf("failed to write to clipboard: %v", sysErr)
+}
+
+// writeToSystemClipboard writes text to the OS-level clipboard.
+func writeToSystemClipboard(text string) error {
+	if clipboard.Unsupported {
+		return fmt.Errorf("no clipboard utility available (install xclip, xsel, or wl-clipboard)")
+	}
+	return clipboard.WriteAll(text)
+}
+
+// isInsideTmux reports whether pass is currently running inside a tmux
+// session.
+func isInsideTmux() bool {
+	return os.Getenv("TMUX") != ""
+}
+
+// copyToTmuxBuffer loads text into a dedicated tmux paste buffer via
+// `tmux load-buffer`. The -w flag additionally asks tmux to forward the
+// buffer to the terminal's clipboard using the OSC 52 escape sequence, if
+// tmux's set-clipboard option and the terminal support it.
+func copyToTmuxBuffer(text string) error {
+	cmd := exec.Command("tmux", "load-buffer", "-w", "-b", tmuxBufferName, "-")
 	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return fmt.Errorf("failed to create stdin pipe: %v", err)
+		return fmt.Errorf("failed to create stdin pipe for tmux: %v", err)
 	}
-	
-	// Start the command
+
 	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("failed to start clip command: %v", err)
+		return fmt.Errorf("failed to start tmux load-buffer: %v", err)
 	}
-	
-	// Write text to stdin
+
 	if _, err := io.WriteString(stdin, text); err != nil {
 		stdin.Close()
-		return fmt.Errorf("failed to write to clipboard: %v", err)
+		return fmt.Errorf("failed to write to tmux buffer: %v", err)
 	}
-	
-	// Close stdin
 	stdin.Close()
-	
-	// Wait for command to complete
+
 	if err := cmd.Wait(); err != nil {
-		return fmt.Errorf("clip command failed: %v", err)
+		return fmt.Errorf("tmux load-buffer failed: %v", err)
 	}
-	
 	return nil
 }
 
