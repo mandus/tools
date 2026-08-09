@@ -1,12 +1,12 @@
 #!/bin/sh
-# Wrapper script to build both gitprompt and pass.
+# Wrapper script to build all tools: gitprompt, pass and sleep.
 #
 # Usage:
-#   ./make.sh            # build both tools
+#   ./make.sh            # build all tools
 #   ./make.sh build      # same
-#   ./make.sh build-all  # cross-compile both tools
-#   ./make.sh clean      # clean both builds
-#   ./make.sh update-deps # update dependencies for both
+#   ./make.sh build-all  # cross-compile (sleep is native-only)
+#   ./make.sh clean      # clean all builds
+#   ./make.sh update-deps # update dependencies where applicable
 
 set -eu
 
@@ -25,11 +25,15 @@ case "$cmd" in
         
         echo "Building pass..."
         (cd "$REPO_ROOT/pass" && ./build.sh "$cmd")
+
+        echo "Building sleep..."
+        (cd "$REPO_ROOT/sleep" && ./build.sh "$cmd")
         ;;
 	install)
 		echo "Install to $PREFIX"
 		cp $REPO_ROOT/shell/pass$EXT $PREFIX/bin
 		cp $REPO_ROOT/shell/gitprompt$EXT $PREFIX/bin
+		cp $REPO_ROOT/shell/sleep$EXT $PREFIX/bin
 		;;
     *)
         echo "Usage: $0 [build|build-all|clean|update-deps]" >&2

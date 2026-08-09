@@ -135,12 +135,55 @@ sudo cp shell/gitprompt /usr/local/bin/
 
 ---
 
+## sleep - Windows sleep(1)
+
+A minimal GNU-`sleep`-alike for Windows, which ships no `sleep` of its own.
+Written in C, ~13 KB, no runtime dependencies.
+
+Motivation: `timeout /t N` is integer-only and fails with "Input redirection
+is not supported" whenever stdin is not a console — for example when called
+from the [goal](https://codeberg.org/anaseto/goal) interpreter's `run`
+builtin. See `specs/009-sleep-command/spec.md`.
+
+### Build
+```bash
+cd sleep && ./build.sh          # native build → ../shell/sleep[.exe]
+cd sleep && ./build.sh clean
+```
+
+### Install
+```bash
+# Windows: copy sleep.exe to a directory on %PATH%
+copy shell\sleep.exe C:\Dev\bins\
+
+# Linux/macOS: not needed, coreutils already provides sleep
+```
+
+### Usage
+```bash
+sleep 2          # 2 seconds
+sleep 0.25       # fractional seconds
+sleep 1.5s       # explicit suffix
+sleep 2m         # minutes; also h (hours), d (days)
+sleep 1m 30      # arguments are summed → 90 seconds
+```
+
+From goal:
+```k
+run"sleep""0.25"
+```
+
+### Prerequisites
+- A C compiler (`gcc`, `clang`); override with `CC=...`
+
+---
+
 ## Building All Tools
 
-Use the wrapper script to build both tools at once:
+Use the wrapper script to build all tools at once:
 ```bash
-./shell/make.sh          # build both gitprompt and pass
+./shell/make.sh          # build gitprompt, pass and sleep
 ./shell/make.sh build    # same
-./shell/make.sh build-all # cross-compile both
-./shell/make.sh clean    # clean both builds
+./shell/make.sh build-all # cross-compile (sleep is native-only)
+./shell/make.sh clean    # clean all builds
 ```
