@@ -1,233 +1,230 @@
-" evergarden.vim -- a forest-toned dark colorscheme for Vim
+" Name:         evergarden
+" Description:  A forest-toned dark colorscheme inspired by The Minish Cap
+" Author:       mandus tools
+" Maintainer:   mandus tools
+" URL:          https://evergarden.moe
+" License:      Vim License (see `:help license`)
+" Last Change:  2026 Feb 14
 "
-" Palette: https://evergarden.moe
-" Spec:    specs/010-evergarden-colorscheme/spec.md
-"
-" Classic Vim only (8.0+). No Neovim groups, no Lua, no dependencies.
+" Spec: specs/010-evergarden-colorscheme/spec.md
 "
 " Options:
 "   let g:evergarden_italic      = 0       " disable italics (default 1)
 "   let g:evergarden_transparent = 1       " keep terminal background (default 0)
-"   let g:evergarden_keyword     = 'blue'  " keyword hue (default 'skye')
-"                                          " any palette name: skye, aqua, blue,
+"   let g:evergarden_keyword     = 'blue'  " keyword hue (default 'skye'); any
+"                                          " palette name: skye, aqua, blue,
 "                                          " green, lime, orange, purple, pink...
 
-hi clear
-if exists('syntax_on')
-  syntax reset
-endif
-
 set background=dark
+
+hi clear
 let g:colors_name = 'evergarden'
 
-let s:italic = get(g:, 'evergarden_italic', 1) ? 'italic' : 'NONE'
-let s:transparent = get(g:, 'evergarden_transparent', 0)
+let s:t_Co = has('gui_running') ? 16777216 : str2nr(&t_Co)
+let s:tgc = has('termguicolors') && &termguicolors
 
-" ---------------------------------------------------------------- palette ---
-let s:p = {}
-let s:p.red      = ['#f57f82', 210]
-let s:p.orange   = ['#f7a182', 216]
-let s:p.yellow   = ['#f5d098', 222]
-let s:p.lime     = ['#dbe6af', 187]
-let s:p.green    = ['#cbe3b3', 151]
-let s:p.aqua     = ['#b3e3ca', 158]
-let s:p.skye     = ['#b3e6db', 152]
-let s:p.snow     = ['#afd9e6', 153]
-let s:p.blue     = ['#b2caed', 111]
-let s:p.purple   = ['#d2bdf3', 183]
-let s:p.pink     = ['#f3c0e5', 218]
-let s:p.cherry   = ['#fae6ef', 255]
-let s:p.text     = ['#f8f9e8', 255]
-let s:p.subtext1 = ['#adc9bc', 145]
-let s:p.subtext0 = ['#96b4aa', 109]
-let s:p.overlay2 = ['#839e9a', 246]
-let s:p.overlay1 = ['#6f8788',  66]
-let s:p.overlay0 = ['#58686d', 241]
-let s:p.surface2 = ['#4a585c', 240]
-let s:p.surface1 = ['#374145', 238]
-let s:p.surface0 = ['#262f33', 236]
-let s:p.base     = ['#1e2528', 235]
-let s:p.mantle   = ['#191e21', 234]
-let s:p.crust    = ['#171c1f', 233]
-let s:p.none     = ['NONE', 'NONE']
+let g:terminal_ansi_colors = ['#374145', '#f57f82', '#cbe3b3', '#f5d098', '#b2caed', '#d2bdf3', '#b3e6db', '#adc9bc', '#4a585c', '#f7a182', '#dbe6af', '#f5d098', '#afd9e6', '#f3c0e5', '#b3e3ca', '#f8f9e8']
 
-" Keyword hue. Any palette name above; falls back to skye if unknown.
-let s:kw = get(g:, 'evergarden_keyword', 'skye')
-if !has_key(s:p, s:kw) || s:kw ==# 'none'
-  let s:kw = 'skye'
+hi! link Boolean Constant
+hi! link Conditional Statement
+hi! link CursorIM Cursor
+hi! link CursorLineFold FoldColumn
+hi! link CursorLineSign SignColumn
+hi! link Define PreProc
+hi! link Float Constant
+hi! link Include PreProc
+hi! link Keyword Statement
+hi! link Label Statement
+hi! link LineNrAbove LineNr
+hi! link LineNrBelow LineNr
+hi! link Macro PreProc
+hi! link Number Constant
+hi! link PopupSelected PmenuSel
+hi! link PreCondit PreProc
+hi! link PreInsert NonText
+hi! link Repeat Statement
+hi! link SpecialChar Special
+hi! link StatusLineTermNC StatusLineNC
+hi! link StorageClass Type
+hi! link Structure Type
+hi! link TabPanel TabLine
+hi! link TabPanelFill TabLineFill
+hi! link Terminal Normal
+hi! link Typedef Type
+hi! link VertSplitNC VertSplit
+hi! link diffAdded Added
+hi! link diffChanged Changed
+hi! link diffRemoved Removed
+hi! link lCursor Cursor
+hi! link markdownH1 htmlH1
+hi! link markdownH2 htmlH2
+hi! link markdownUrl Underlined
+hi! link netrwComment Comment
+hi! link netrwHelpCmd Statement
+
+hi Normal guifg=#f8f9e8 guibg=#1e2528 guisp=NONE gui=NONE ctermfg=255 ctermbg=235 cterm=NONE term=NONE
+hi Added guifg=#cbe3b3 guibg=NONE guisp=NONE gui=NONE ctermfg=151 ctermbg=NONE cterm=NONE term=NONE
+hi Changed guifg=#f5d098 guibg=NONE guisp=NONE gui=NONE ctermfg=222 ctermbg=NONE cterm=NONE term=NONE
+hi Character guifg=#b3e3ca guibg=NONE guisp=NONE gui=NONE ctermfg=158 ctermbg=NONE cterm=NONE term=NONE
+hi ColorColumn guifg=NONE guibg=#262f33 guisp=NONE gui=NONE ctermfg=NONE ctermbg=236 cterm=NONE term=reverse
+hi Comment guifg=#6f8788 guibg=NONE guisp=NONE gui=italic ctermfg=66 ctermbg=NONE cterm=italic term=bold
+hi Conceal guifg=#6f8788 guibg=NONE guisp=NONE gui=NONE ctermfg=66 ctermbg=NONE cterm=NONE term=NONE
+hi Constant guifg=#f7a182 guibg=NONE guisp=NONE gui=NONE ctermfg=216 ctermbg=NONE cterm=NONE term=NONE
+hi CurSearch guifg=#1e2528 guibg=#f7a182 guisp=NONE gui=NONE ctermfg=235 ctermbg=216 cterm=NONE term=reverse
+hi Cursor guifg=#1e2528 guibg=#f8f9e8 guisp=NONE gui=NONE ctermfg=235 ctermbg=255 cterm=NONE term=reverse
+hi CursorColumn guifg=NONE guibg=#262f33 guisp=NONE gui=NONE ctermfg=NONE ctermbg=236 cterm=NONE term=NONE
+hi CursorLine guifg=NONE guibg=#262f33 guisp=NONE gui=NONE ctermfg=NONE ctermbg=236 cterm=NONE term=underline
+hi CursorLineNr guifg=#f5d098 guibg=NONE guisp=NONE gui=bold ctermfg=222 ctermbg=NONE cterm=bold term=bold
+hi Debug guifg=#f57f82 guibg=NONE guisp=NONE gui=NONE ctermfg=210 ctermbg=NONE cterm=NONE term=NONE
+hi Delimiter guifg=#839e9a guibg=NONE guisp=NONE gui=NONE ctermfg=246 ctermbg=NONE cterm=NONE term=NONE
+hi DiffAdd guifg=#cbe3b3 guibg=#262f33 guisp=NONE gui=NONE ctermfg=151 ctermbg=236 cterm=NONE term=reverse
+hi DiffChange guifg=#f5d098 guibg=#262f33 guisp=NONE gui=NONE ctermfg=222 ctermbg=236 cterm=NONE term=NONE
+hi DiffDelete guifg=#f57f82 guibg=#262f33 guisp=NONE gui=NONE ctermfg=210 ctermbg=236 cterm=NONE term=reverse
+hi DiffText guifg=#1e2528 guibg=#f5d098 guisp=NONE gui=bold ctermfg=235 ctermbg=222 cterm=bold term=reverse
+hi Directory guifg=#b2caed guibg=NONE guisp=NONE gui=NONE ctermfg=111 ctermbg=NONE cterm=NONE term=NONE
+hi EndOfBuffer guifg=#374145 guibg=#1e2528 guisp=NONE gui=NONE ctermfg=238 ctermbg=235 cterm=NONE term=NONE
+hi Error guifg=#f57f82 guibg=NONE guisp=NONE gui=bold ctermfg=210 ctermbg=NONE cterm=bold term=bold,reverse
+hi ErrorMsg guifg=#f57f82 guibg=NONE guisp=NONE gui=bold ctermfg=210 ctermbg=NONE cterm=bold term=bold,reverse
+hi Exception guifg=#f57f82 guibg=NONE guisp=NONE gui=NONE ctermfg=210 ctermbg=NONE cterm=NONE term=NONE
+hi FoldColumn guifg=#58686d guibg=#1e2528 guisp=NONE gui=NONE ctermfg=241 ctermbg=235 cterm=NONE term=NONE
+hi Folded guifg=#96b4aa guibg=#262f33 guisp=NONE gui=NONE ctermfg=109 ctermbg=236 cterm=NONE term=NONE
+hi Function guifg=#b2caed guibg=NONE guisp=NONE gui=NONE ctermfg=111 ctermbg=NONE cterm=NONE term=NONE
+hi Identifier guifg=#adc9bc guibg=NONE guisp=NONE gui=NONE ctermfg=145 ctermbg=NONE cterm=NONE term=NONE
+hi Ignore guifg=#58686d guibg=NONE guisp=NONE gui=NONE ctermfg=241 ctermbg=NONE cterm=NONE term=NONE
+hi IncSearch guifg=#1e2528 guibg=#f7a182 guisp=NONE gui=NONE ctermfg=235 ctermbg=216 cterm=NONE term=bold,reverse,underline
+hi LineNr guifg=#4a585c guibg=#1e2528 guisp=NONE gui=NONE ctermfg=240 ctermbg=235 cterm=NONE term=NONE
+hi MatchParen guifg=#f7a182 guibg=#4a585c guisp=NONE gui=bold ctermfg=216 ctermbg=240 cterm=bold term=bold,underline
+hi Menu guifg=#f8f9e8 guibg=#262f33 guisp=NONE gui=NONE ctermfg=255 ctermbg=236 cterm=NONE term=NONE
+hi MessageWindow guifg=#f8f9e8 guibg=#262f33 guisp=NONE gui=NONE ctermfg=255 ctermbg=236 cterm=NONE term=NONE
+hi ModeMsg guifg=#f8f9e8 guibg=NONE guisp=NONE gui=bold ctermfg=255 ctermbg=NONE cterm=bold term=bold
+hi MoreMsg guifg=#cbe3b3 guibg=NONE guisp=NONE gui=NONE ctermfg=151 ctermbg=NONE cterm=NONE term=NONE
+hi NonText guifg=#4a585c guibg=NONE guisp=NONE gui=NONE ctermfg=240 ctermbg=NONE cterm=NONE term=NONE
+hi Operator guifg=#96b4aa guibg=NONE guisp=NONE gui=NONE ctermfg=109 ctermbg=NONE cterm=NONE term=NONE
+hi Pmenu guifg=#adc9bc guibg=#262f33 guisp=NONE gui=NONE ctermfg=145 ctermbg=236 cterm=NONE term=reverse
+hi PmenuBorder guifg=#6f8788 guibg=#262f33 guisp=NONE gui=NONE ctermfg=66 ctermbg=236 cterm=NONE term=NONE
+hi PmenuExtra guifg=#839e9a guibg=#262f33 guisp=NONE gui=NONE ctermfg=246 ctermbg=236 cterm=NONE term=reverse
+hi PmenuExtraSel guifg=#1e2528 guibg=#cbe3b3 guisp=NONE gui=NONE ctermfg=235 ctermbg=151 cterm=NONE term=NONE
+hi PmenuKind guifg=#d2bdf3 guibg=#262f33 guisp=NONE gui=NONE ctermfg=183 ctermbg=236 cterm=NONE term=reverse
+hi PmenuKindSel guifg=#1e2528 guibg=#cbe3b3 guisp=NONE gui=NONE ctermfg=235 ctermbg=151 cterm=NONE term=NONE
+hi PmenuMatch guifg=#f7a182 guibg=#262f33 guisp=NONE gui=bold ctermfg=216 ctermbg=236 cterm=bold term=bold
+hi PmenuMatchSel guifg=#1e2528 guibg=#cbe3b3 guisp=NONE gui=bold ctermfg=235 ctermbg=151 cterm=bold term=bold
+hi PmenuSbar guifg=NONE guibg=#374145 guisp=NONE gui=NONE ctermfg=NONE ctermbg=238 cterm=NONE term=reverse
+hi PmenuSel guifg=#1e2528 guibg=#cbe3b3 guisp=NONE gui=bold ctermfg=235 ctermbg=151 cterm=bold term=bold
+hi PmenuShadow guifg=#6f8788 guibg=#171c1f guisp=NONE gui=NONE ctermfg=66 ctermbg=233 cterm=NONE term=NONE
+hi PmenuThumb guifg=NONE guibg=#58686d guisp=NONE gui=NONE ctermfg=NONE ctermbg=241 cterm=NONE term=NONE
+hi Popup guifg=#f8f9e8 guibg=#191e21 guisp=NONE gui=NONE ctermfg=255 ctermbg=234 cterm=NONE term=NONE
+hi PopupBorder guifg=#6f8788 guibg=#191e21 guisp=NONE gui=NONE ctermfg=66 ctermbg=234 cterm=NONE term=NONE
+hi PopupNotification guifg=#1e2528 guibg=#f5d098 guisp=NONE gui=NONE ctermfg=235 ctermbg=222 cterm=NONE term=NONE
+hi PopupTitle guifg=#f8f9e8 guibg=#191e21 guisp=NONE gui=bold ctermfg=255 ctermbg=234 cterm=bold term=bold
+hi PreProc guifg=#f3c0e5 guibg=NONE guisp=NONE gui=NONE ctermfg=218 ctermbg=NONE cterm=NONE term=NONE
+hi Question guifg=#cbe3b3 guibg=NONE guisp=NONE gui=NONE ctermfg=151 ctermbg=NONE cterm=NONE term=standout
+hi QuickFixLine guifg=NONE guibg=#374145 guisp=NONE gui=bold ctermfg=NONE ctermbg=238 cterm=bold term=bold
+hi Removed guifg=#f57f82 guibg=NONE guisp=NONE gui=NONE ctermfg=210 ctermbg=NONE cterm=NONE term=NONE
+hi Scrollbar guifg=#58686d guibg=#262f33 guisp=NONE gui=NONE ctermfg=241 ctermbg=236 cterm=NONE term=NONE
+hi Search guifg=#1e2528 guibg=#f5d098 guisp=NONE gui=NONE ctermfg=235 ctermbg=222 cterm=NONE term=reverse
+hi SignColumn guifg=#58686d guibg=#1e2528 guisp=NONE gui=NONE ctermfg=241 ctermbg=235 cterm=NONE term=reverse
+hi Special guifg=#d2bdf3 guibg=NONE guisp=NONE gui=NONE ctermfg=183 ctermbg=NONE cterm=NONE term=NONE
+hi SpecialComment guifg=#839e9a guibg=NONE guisp=NONE gui=italic ctermfg=246 ctermbg=NONE cterm=italic term=bold
+hi SpecialKey guifg=#6f8788 guibg=NONE guisp=NONE gui=NONE ctermfg=66 ctermbg=NONE cterm=NONE term=bold
+hi SpellBad guifg=NONE guibg=NONE guisp=#f57f82 gui=undercurl ctermfg=210 ctermbg=NONE cterm=underline term=underline
+hi SpellCap guifg=NONE guibg=NONE guisp=#f5d098 gui=undercurl ctermfg=222 ctermbg=NONE cterm=underline term=underline
+hi SpellLocal guifg=NONE guibg=NONE guisp=#b3e6db gui=undercurl ctermfg=152 ctermbg=NONE cterm=underline term=underline
+hi SpellRare guifg=NONE guibg=NONE guisp=#d2bdf3 gui=undercurl ctermfg=183 ctermbg=NONE cterm=underline term=underline
+hi Statement guifg=#b3e6db guibg=NONE guisp=NONE gui=NONE ctermfg=152 ctermbg=NONE cterm=NONE term=NONE
+hi StatusLine guifg=#f8f9e8 guibg=#262f33 guisp=NONE gui=NONE ctermfg=255 ctermbg=236 cterm=NONE term=bold,reverse
+hi StatusLineNC guifg=#6f8788 guibg=#191e21 guisp=NONE gui=NONE ctermfg=66 ctermbg=234 cterm=NONE term=bold,underline
+hi StatusLineTerm guifg=#1e2528 guibg=#cbe3b3 guisp=NONE gui=bold ctermfg=235 ctermbg=151 cterm=bold term=bold,reverse
+hi String guifg=#cbe3b3 guibg=NONE guisp=NONE gui=NONE ctermfg=151 ctermbg=NONE cterm=NONE term=NONE
+hi TabLine guifg=#839e9a guibg=#191e21 guisp=NONE gui=NONE ctermfg=246 ctermbg=234 cterm=NONE term=bold,underline
+hi TabLineFill guifg=NONE guibg=#171c1f guisp=NONE gui=NONE ctermfg=NONE ctermbg=233 cterm=NONE term=NONE
+hi TabLineSel guifg=#1e2528 guibg=#cbe3b3 guisp=NONE gui=bold ctermfg=235 ctermbg=151 cterm=bold term=bold,reverse
+hi Tag guifg=#b3e3ca guibg=NONE guisp=NONE gui=NONE ctermfg=158 ctermbg=NONE cterm=NONE term=NONE
+hi Title guifg=#cbe3b3 guibg=NONE guisp=NONE gui=bold ctermfg=151 ctermbg=NONE cterm=bold term=bold
+hi TitleBar guifg=#f8f9e8 guibg=#374145 guisp=NONE gui=NONE ctermfg=255 ctermbg=238 cterm=NONE term=NONE
+hi TitleBarNC guifg=#6f8788 guibg=#262f33 guisp=NONE gui=NONE ctermfg=66 ctermbg=236 cterm=NONE term=NONE
+hi Todo guifg=#1e2528 guibg=#f5d098 guisp=NONE gui=bold ctermfg=235 ctermbg=222 cterm=bold term=bold,reverse
+hi ToolbarButton guifg=#f8f9e8 guibg=#374145 guisp=NONE gui=bold ctermfg=255 ctermbg=238 cterm=bold term=bold,reverse
+hi ToolbarLine guifg=NONE guibg=#262f33 guisp=NONE gui=NONE ctermfg=NONE ctermbg=236 cterm=NONE term=reverse
+hi Tooltip guifg=#f8f9e8 guibg=#374145 guisp=NONE gui=NONE ctermfg=255 ctermbg=238 cterm=NONE term=NONE
+hi Type guifg=#f5d098 guibg=NONE guisp=NONE gui=NONE ctermfg=222 ctermbg=NONE cterm=NONE term=NONE
+hi Underlined guifg=#afd9e6 guibg=NONE guisp=NONE gui=underline ctermfg=153 ctermbg=NONE cterm=underline term=underline
+hi VertSplit guifg=#374145 guibg=#1e2528 guisp=NONE gui=NONE ctermfg=238 ctermbg=235 cterm=NONE term=NONE
+hi Visual guifg=NONE guibg=#374145 guisp=NONE gui=bold ctermfg=NONE ctermbg=238 cterm=bold term=reverse
+hi VisualNOS guifg=NONE guibg=#374145 guisp=NONE gui=NONE ctermfg=NONE ctermbg=238 cterm=NONE term=reverse
+hi WarningMsg guifg=#f5d098 guibg=NONE guisp=NONE gui=NONE ctermfg=222 ctermbg=NONE cterm=NONE term=standout
+hi Whitespace guifg=#374145 guibg=NONE guisp=NONE gui=NONE ctermfg=238 ctermbg=NONE cterm=NONE term=NONE
+hi WildMenu guifg=#1e2528 guibg=#b3e6db guisp=NONE gui=NONE ctermfg=235 ctermbg=152 cterm=NONE term=bold
+hi debugBreakpoint guifg=#1e2528 guibg=#f57f82 guisp=NONE gui=bold ctermfg=235 ctermbg=210 cterm=bold term=bold
+hi debugPC guifg=NONE guibg=#374145 guisp=NONE gui=NONE ctermfg=NONE ctermbg=238 cterm=NONE term=reverse
+hi diffFile guifg=#b2caed guibg=NONE guisp=NONE gui=bold ctermfg=111 ctermbg=NONE cterm=bold term=bold
+hi diffIndexLine guifg=#839e9a guibg=NONE guisp=NONE gui=NONE ctermfg=246 ctermbg=NONE cterm=NONE term=NONE
+hi diffLine guifg=#d2bdf3 guibg=NONE guisp=NONE gui=NONE ctermfg=183 ctermbg=NONE cterm=NONE term=NONE
+hi helpExample guifg=#dbe6af guibg=NONE guisp=NONE gui=NONE ctermfg=187 ctermbg=NONE cterm=NONE term=NONE
+hi helpHyperTextJump guifg=#b2caed guibg=NONE guisp=NONE gui=underline ctermfg=111 ctermbg=NONE cterm=underline term=underline
+hi htmlH1 guifg=#cbe3b3 guibg=NONE guisp=NONE gui=bold ctermfg=151 ctermbg=NONE cterm=bold term=bold
+hi htmlH2 guifg=#b3e3ca guibg=NONE guisp=NONE gui=bold ctermfg=158 ctermbg=NONE cterm=bold term=bold
+hi markdownCode guifg=#dbe6af guibg=NONE guisp=NONE gui=NONE ctermfg=187 ctermbg=NONE cterm=NONE term=NONE
+hi markdownH3 guifg=#b3e6db guibg=NONE guisp=NONE gui=bold ctermfg=152 ctermbg=NONE cterm=bold term=bold
+hi markdownLinkText guifg=#b2caed guibg=NONE guisp=NONE gui=NONE ctermfg=111 ctermbg=NONE cterm=NONE term=NONE
+hi netrwClassify guifg=#6f8788 guibg=NONE guisp=NONE gui=NONE ctermfg=66 ctermbg=NONE cterm=NONE term=NONE
+hi netrwDir guifg=#b2caed guibg=NONE guisp=NONE gui=bold ctermfg=111 ctermbg=NONE cterm=bold term=bold
+hi netrwExe guifg=#cbe3b3 guibg=NONE guisp=NONE gui=NONE ctermfg=151 ctermbg=NONE cterm=NONE term=NONE
+hi netrwMarkFile guifg=#1e2528 guibg=#f7a182 guisp=NONE gui=NONE ctermfg=235 ctermbg=216 cterm=NONE term=reverse
+hi netrwSymLink guifg=#b3e6db guibg=NONE guisp=NONE gui=underline ctermfg=152 ctermbg=NONE cterm=underline term=underline
+hi netrwTreeBar guifg=#4a585c guibg=NONE guisp=NONE gui=NONE ctermfg=240 ctermbg=NONE cterm=NONE term=NONE
+hi netrwVersion guifg=#f5d098 guibg=NONE guisp=NONE gui=NONE ctermfg=222 ctermbg=NONE cterm=NONE term=NONE
+
+" Options --------------------------------------------------------------- {{{
+if !get(g:, 'evergarden_italic', 1)
+  hi Comment gui=NONE cterm=NONE
+  hi SpecialComment gui=NONE cterm=NONE
 endif
 
-" ----------------------------------------------------------------- helper ---
-" s:hi(group, fg, bg [, attr [, sp]])
-function! s:hi(group, fg, bg, ...) abort
-  let l:fg = s:p[a:fg]
-  let l:bg = s:p[a:bg]
-  let l:attr = a:0 > 0 && !empty(a:1) ? a:1 : 'NONE'
-  let l:cmd = 'highlight ' . a:group
-        \ . ' guifg=' . l:fg[0] . ' guibg=' . l:bg[0] . ' gui=' . l:attr
-        \ . ' ctermfg=' . l:fg[1] . ' ctermbg=' . l:bg[1] . ' cterm=' . l:attr
-  if a:0 > 1 && !empty(a:2)
-    let l:cmd .= ' guisp=' . s:p[a:2][0]
+if get(g:, 'evergarden_transparent', 0)
+  hi Normal guibg=NONE ctermbg=NONE
+  hi EndOfBuffer guibg=NONE ctermbg=NONE
+  hi FoldColumn guibg=NONE ctermbg=NONE
+  hi LineNr guibg=NONE ctermbg=NONE
+  hi SignColumn guibg=NONE ctermbg=NONE
+  hi VertSplit guibg=NONE ctermbg=NONE
+endif
+
+if exists('g:evergarden_keyword')
+  let s:hues = {'red': ['#f57f82', 210], 'orange': ['#f7a182', 216],
+        \ 'yellow': ['#f5d098', 222], 'lime': ['#dbe6af', 187],
+        \ 'green': ['#cbe3b3', 151], 'aqua': ['#b3e3ca', 158],
+        \ 'skye': ['#b3e6db', 152], 'snow': ['#afd9e6', 153],
+        \ 'blue': ['#b2caed', 111], 'purple': ['#d2bdf3', 183],
+        \ 'pink': ['#f3c0e5', 218], 'cherry': ['#fae6ef', 255],
+        \ 'text': ['#f8f9e8', 255], 'subtext1': ['#adc9bc', 145],
+        \ 'subtext0': ['#96b4aa', 109]}
+  if has_key(s:hues, g:evergarden_keyword)
+    let s:kw = s:hues[g:evergarden_keyword]
+    execute 'hi Statement guifg=' . s:kw[0] . ' ctermfg=' . s:kw[1]
+    unlet s:kw
   endif
-  execute l:cmd
-endfunction
+  unlet s:hues
+endif
+" }}}
 
-let s:bg = s:transparent ? 'none' : 'base'
-
-" -------------------------------------------------------------- ui chrome ---
-call s:hi('Normal',          'text',     s:bg)
-call s:hi('ColorColumn',     'none',     'surface0')
-call s:hi('Conceal',         'overlay1', 'none')
-call s:hi('Cursor',          'base',     'text')
-call s:hi('lCursor',         'base',     'text')
-call s:hi('CursorIM',        'base',     'text')
-call s:hi('CursorColumn',    'none',     'surface0')
-call s:hi('CursorLine',      'none',     'surface0')
-call s:hi('Directory',       'blue',     'none')
-call s:hi('EndOfBuffer',     'surface1', s:bg)
-call s:hi('ErrorMsg',        'red',      'none', 'bold')
-call s:hi('VertSplit',       'surface1', s:bg)
-call s:hi('Folded',          'subtext0', 'surface0')
-call s:hi('FoldColumn',      'overlay0', s:bg)
-call s:hi('SignColumn',      'overlay0', s:bg)
-call s:hi('IncSearch',       'base',     'orange')
-call s:hi('CurSearch',       'base',     'orange')
-call s:hi('Search',          'base',     'yellow')
-call s:hi('LineNr',          'surface2', s:bg)
-call s:hi('LineNrAbove',     'surface2', s:bg)
-call s:hi('LineNrBelow',     'surface2', s:bg)
-call s:hi('CursorLineNr',    'yellow',   'none', 'bold')
-call s:hi('MatchParen',      'orange',   'surface2', 'bold')
-call s:hi('ModeMsg',         'text',     'none', 'bold')
-call s:hi('MoreMsg',         'green',    'none')
-call s:hi('NonText',         'surface2', 'none')
-call s:hi('Pmenu',           'subtext1', 'surface0')
-call s:hi('PmenuSel',        'base',     'green', 'bold')
-call s:hi('PmenuKind',       'purple',   'surface0')
-call s:hi('PmenuKindSel',    'base',     'green')
-call s:hi('PmenuExtra',      'overlay2', 'surface0')
-call s:hi('PmenuExtraSel',   'base',     'green')
-call s:hi('PmenuMatch',      'orange',   'surface0', 'bold')
-call s:hi('PmenuMatchSel',   'base',     'green',    'bold')
-call s:hi('PmenuSbar',       'none',     'surface1')
-call s:hi('PmenuThumb',      'none',     'overlay0')
-call s:hi('Question',        'green',    'none')
-call s:hi('QuickFixLine',    'none',     'surface1', 'bold')
-call s:hi('SpecialKey',      'overlay1', 'none')
-call s:hi('StatusLine',      'text',     'surface0')
-call s:hi('StatusLineNC',    'overlay1', 'mantle')
-call s:hi('StatusLineTerm',  'base',     'green', 'bold')
-call s:hi('StatusLineTermNC','overlay1', 'mantle')
-call s:hi('TabLine',         'overlay2', 'mantle')
-call s:hi('TabLineFill',     'none',     'crust')
-call s:hi('TabLineSel',      'base',     'green', 'bold')
-call s:hi('Title',           'green',    'none',  'bold')
-call s:hi('Visual',          'none',     'surface1', 'bold')
-call s:hi('VisualNOS',       'none',     'surface1')
-call s:hi('WarningMsg',      'yellow',   'none')
-call s:hi('Whitespace',      'surface1', 'none')
-call s:hi('WildMenu',        'base',     'skye')
-call s:hi('Terminal',        'text',     s:bg)
-
-" popup windows / balloons / toolbar (GUI and +popupwin)
-call s:hi('Menu',              'text',     'surface0')
-call s:hi('Scrollbar',         'overlay0', 'surface0')
-call s:hi('Tooltip',           'text',     'surface1')
-call s:hi('ToolbarLine',       'none',     'surface0')
-call s:hi('ToolbarButton',     'text',     'surface1', 'bold')
-call s:hi('Popup',             'text',     'mantle')
-call s:hi('PopupNotification', 'base',     'yellow')
-call s:hi('PopupSelected',     'base',     'green',  'bold')
-call s:hi('MessageWindow',     'text',     'surface0')
-
-" ----------------------------------------------------------------- syntax ---
-call s:hi('Comment',        'overlay1', 'none', s:italic)
-call s:hi('Constant',       'orange',   'none')
-call s:hi('String',         'green',    'none')
-call s:hi('Character',      'aqua',     'none')
-call s:hi('Number',         'orange',   'none')
-call s:hi('Boolean',        'orange',   'none')
-call s:hi('Float',          'orange',   'none')
-call s:hi('Identifier',     'subtext1', 'none')
-call s:hi('Function',       'blue',     'none')
-call s:hi('Statement',      s:kw,       'none')
-call s:hi('Conditional',    s:kw,       'none')
-call s:hi('Repeat',         s:kw,       'none')
-call s:hi('Label',          s:kw,       'none')
-call s:hi('Keyword',        s:kw,       'none')
-call s:hi('Operator',       'subtext0', 'none')
-call s:hi('Exception',      'red',      'none')
-call s:hi('PreProc',        'pink',     'none')
-call s:hi('Include',        'pink',     'none')
-call s:hi('Define',         'pink',     'none')
-call s:hi('Macro',          'pink',     'none')
-call s:hi('PreCondit',      'pink',     'none')
-call s:hi('Type',           'yellow',   'none')
-call s:hi('StorageClass',   'yellow',   'none')
-call s:hi('Structure',      'yellow',   'none')
-call s:hi('Typedef',        'yellow',   'none')
-call s:hi('Special',        'purple',   'none')
-call s:hi('SpecialChar',    'purple',   'none')
-call s:hi('Tag',            'aqua',     'none')
-call s:hi('Delimiter',      'overlay2', 'none')
-call s:hi('SpecialComment', 'overlay2', 'none', s:italic)
-call s:hi('Debug',          'red',      'none')
-call s:hi('Underlined',     'snow',     'none', 'underline')
-call s:hi('Ignore',         'overlay0', 'none')
-call s:hi('Error',          'red',      'none', 'bold')
-call s:hi('Todo',           'base',     'yellow', 'bold')
-call s:hi('debugPC',        'none',     'surface1')
-call s:hi('debugBreakpoint','base',     'red', 'bold')
-
-" ------------------------------------------------------------------ diffs ---
-call s:hi('DiffAdd',       'green',    'surface0')
-call s:hi('DiffChange',    'yellow',   'surface0')
-call s:hi('DiffDelete',    'red',      'surface0')
-call s:hi('DiffText',      'base',     'yellow', 'bold')
-call s:hi('diffAdded',     'green',    'none')
-call s:hi('diffRemoved',   'red',      'none')
-call s:hi('diffChanged',   'yellow',   'none')
-call s:hi('diffFile',      'blue',     'none', 'bold')
-call s:hi('diffLine',      'purple',   'none')
-call s:hi('diffIndexLine', 'overlay2', 'none')
-
-" ------------------------------------------------------------------ spell ---
-call s:hi('SpellBad',   'none', 'none', 'undercurl', 'red')
-call s:hi('SpellCap',   'none', 'none', 'undercurl', 'yellow')
-call s:hi('SpellLocal', 'none', 'none', 'undercurl', 'skye')
-call s:hi('SpellRare',  'none', 'none', 'undercurl', 'purple')
-
-" ------------------------------------------------------------------ netrw ---
-call s:hi('netrwDir',       'blue',     'none', 'bold')
-call s:hi('netrwClassify',  'overlay1', 'none')
-call s:hi('netrwExe',       'green',    'none')
-call s:hi('netrwSymLink',   'skye',     'none', 'underline')
-call s:hi('netrwTreeBar',   'surface2', 'none')
-call s:hi('netrwMarkFile',  'base',     'orange')
-call s:hi('netrwComment',   'overlay1', 'none', s:italic)
-call s:hi('netrwHelpCmd',   s:kw,       'none')
-call s:hi('netrwVersion',   'yellow',   'none')
-
-" -------------------------------------------------------------- filetypes ---
-call s:hi('htmlH1',           'green',  'none', 'bold')
-call s:hi('htmlH2',           'aqua',   'none', 'bold')
-call s:hi('markdownH1',       'green',  'none', 'bold')
-call s:hi('markdownH2',       'aqua',   'none', 'bold')
-call s:hi('markdownH3',       'skye',   'none', 'bold')
-call s:hi('markdownCode',     'lime',   'none')
-call s:hi('markdownUrl',      'snow',   'none', 'underline')
-call s:hi('markdownLinkText', 'blue',   'none')
-call s:hi('helpHyperTextJump','blue',   'none', 'underline')
-call s:hi('helpExample',      'lime',   'none')
-
-" ----------------------------------------------------- :terminal ansi ---
-if has('terminal')
-  let g:terminal_ansi_colors = [
-        \ s:p.surface1[0], s:p.red[0],    s:p.green[0], s:p.yellow[0],
-        \ s:p.blue[0],     s:p.purple[0], s:p.skye[0],  s:p.subtext1[0],
-        \ s:p.surface2[0], s:p.orange[0], s:p.lime[0],  s:p.yellow[0],
-        \ s:p.snow[0],     s:p.pink[0],   s:p.aqua[0],  s:p.text[0],
-        \ ]
+if s:tgc || s:t_Co >= 256
+  finish
 endif
 
-delfunction s:hi
+" 16- and 8-colour terminals are out of scope (see the spec):
+" the 256-colour attributes above are left in place.
+if s:t_Co >= 8
+  finish
+endif
+
+" Monochrome terminals: groups that are defined only by a link
+" still need their own term attributes.
+if s:t_Co >= 0
+  hi CursorLineFold term=underline
+  hi CursorLineSign term=underline
+  hi StatusLineTermNC term=bold,underline
+  hi Terminal term=NONE
+  finish
+endif
+
+" vim: et ts=8 sw=2 sts=2

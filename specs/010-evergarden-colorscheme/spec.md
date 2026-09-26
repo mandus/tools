@@ -119,10 +119,28 @@ evergarden/
   test/diff_{a,b}.txt     # diff-mode fixture
   README.md
 ```
-`colors/evergarden.vim` defines the palette as a script-local dictionary and
-emits highlights through one `s:hi()` helper that writes `guifg`/`guibg`/`gui`
-and `ctermfg`/`ctermbg`/`cterm` in a single `highlight` command. `NONE` is used
-for absent attributes so the file is safe to re-source.
+`colors/evergarden.vim` follows the layout of the colorschemes shipped with
+Vim (`$VIMRUNTIME/colors`, Colortemplate output), so it reads like a member of
+that family:
+
+1. Header block: `Name`, `Description`, `Author`, `Maintainer`, `URL`,
+   `License`, `Last Change`, then the options.
+2. `set background=dark`, `hi clear`, `let g:colors_name`.
+3. `s:t_Co` / `s:tgc` capability variables.
+4. `g:terminal_ansi_colors`.
+5. Alphabetical `hi! link` block for every group that is a synonym of another.
+6. One flat `hi` line per group — `Normal` first, then alphabetical — each
+   spelling out `guifg guibg guisp gui ctermfg ctermbg cterm term`. No helper
+   function, no dictionary lookups, no `execute`: the file is a plain list of
+   `:highlight` commands and is safe to re-source.
+7. Option overrides (italic / transparent / keyword hue) as a small block of
+   partial `hi` commands that amend the groups above.
+8. Capability tiers ending in `finish`, as in the distribution schemes:
+   true colour or 256 colours use the block above; 16- and 8-colour terminals
+   are out of scope and keep those attributes; monochrome terminals get `term`
+   attributes for the groups that exist only as links.
+
+`NONE` is used for absent attributes so re-sourcing cannot leave stale colours.
 
 ### Italics
 
@@ -133,8 +151,9 @@ fallback logic is needed.
 ### Transparency
 
 `g:evergarden_transparent` (default `0`) clears the background of `Normal`,
-`SignColumn`, `EndOfBuffer`, `LineNr`, `FoldColumn`, `VertSplit`, and
-`Terminal` so the terminal's own background shows through.
+`SignColumn`, `EndOfBuffer`, `LineNr`, `FoldColumn`, and `VertSplit` so the
+terminal's own background shows through. `Terminal` links to `Normal` and
+follows automatically.
 
 ### Vim only
 
@@ -145,7 +164,10 @@ omitted entirely: `@*` captures raise `W18` in Vim, and `Diagnostic*`, `Lsp*`,
 `LineNrAbove`/`LineNrBelow`, `PmenuMatch`/`PmenuMatchSel`, `StatusLineTerm`,
 `Terminal`, `Popup`/`PopupSelected`/`PopupNotification`, `MessageWindow`,
 `ToolbarLine`/`ToolbarButton`, `Menu`/`Scrollbar`/`Tooltip`, `debugPC`,
-`debugBreakpoint`.
+`debugBreakpoint`, plus the newer groups used by the distribution schemes:
+`Added`/`Changed`/`Removed`, `PmenuBorder`/`PmenuShadow`,
+`PopupBorder`/`PopupTitle`, `TitleBar`/`TitleBarNC`, `VertSplitNC`,
+`CursorLineFold`/`CursorLineSign`, `TabPanel`/`TabPanelFill`, `PreInsert`.
 
 ### Terminal Colours
 
@@ -182,6 +204,7 @@ nothing has to be installed.
 | `let g:evergarden_keyword = 'bogus'` | Silently falls back to skye |
 | `vim -Nu NONE -c 'set tgc' -c 'colo evergarden' -c q` | Exits 0, no errors |
 | `:colorscheme evergarden` twice | No `E` errors (re-sourcing is safe) |
+| `:source $VIMRUNTIME/colors/tools/check_colors.vim` | Same report as the bundled schemes |
 | Plain Vim 8, `:colorscheme evergarden` | No `W18` warnings |
 | Vim without `+terminal` | No error from the `g:terminal_ansi_colors` block |
 | `&t_Co == 256`, no termguicolors | cterm attributes applied |
