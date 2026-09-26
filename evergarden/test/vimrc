@@ -1,0 +1,73 @@
+" test/vimrc -- preview evergarden without installing it.
+"
+" Loaded by test/run.sh, or by hand:
+"
+"   vim -N -u evergarden/test/vimrc
+"
+" Set EVERGARDEN_TEST_256=1 in the environment for the cterm fallback.
+" Set EVERGARDEN_KEYWORD=blue (or any palette name) to try a keyword hue.
+" Inside the preview, :Kw <name> swaps the keyword hue live.
+
+set nocompatible
+
+" Repository paths, derived from this file -- cwd does not matter.
+let s:test = expand('<sfile>:p:h')
+let s:root = fnamemodify(s:test, ':h')
+execute 'set runtimepath^=' . fnameescape(s:root)
+
+syntax on
+filetype plugin indent on
+
+set background=dark
+if empty($EVERGARDEN_TEST_256)
+  set termguicolors
+else
+  set notermguicolors
+  set t_Co=256
+endif
+
+" Options here so the preview exercises the UI groups too.
+set number cursorline laststatus=2 showtabline=2 list
+set listchars=tab:>-,trail:~,nbsp:+
+set fillchars=vert:\|,fold:-
+set nowrap
+
+if !empty($EVERGARDEN_KEYWORD)
+  let g:evergarden_keyword = $EVERGARDEN_KEYWORD
+endif
+
+colorscheme evergarden
+
+" :Kw <palette-name> -- swap the keyword hue and reload, for auditioning.
+let s:hues = ['skye', 'aqua', 'blue', 'snow', 'green', 'lime', 'orange',
+      \ 'yellow', 'purple', 'pink', 'red', 'cherry', 'subtext1']
+
+function! s:KwComplete(A, L, P) abort
+  return filter(copy(s:hues), 'v:val =~# "^" . a:A')
+endfunction
+
+function! s:Kw(name) abort
+  let g:evergarden_keyword = a:name
+  colorscheme evergarden
+  redraw
+  echo 'keyword hue: ' . a:name
+endfunction
+
+command! -nargs=1 -complete=customlist,s:KwComplete Kw call s:Kw(<q-args>)
+
+" Tab 1: Vim's own dump of every defined highlight group.
+runtime syntax/hitest.vim
+
+" Tabs 2-5: syntax in context, spell, and a live diff.
+execute 'tabnew ' . fnameescape(s:test . '/sample.c')
+execute 'tabnew ' . fnameescape(s:test . '/sample.vim')
+execute 'tabnew ' . fnameescape(s:test . '/sample.md')
+setlocal spell spelllang=en
+execute 'tabnew ' . fnameescape(s:test . '/diff_a.txt')
+execute 'vertical diffsplit ' . fnameescape(s:test . '/diff_b.txt')
+tabfirst
+
+" :runtime syntax/colortest.vim  -- the raw cterm colour grid
+redraw
+echo 'evergarden preview | gt/gT tabs | :Kw <hue> to retint keywords | :qa'
+      \ . ' | termguicolors=' . (&termguicolors ? 'on' : 'off')

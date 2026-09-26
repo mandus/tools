@@ -178,6 +178,35 @@ run"sleep""0.25"
 
 ---
 
+## evergarden - Vim Colorscheme
+
+A classic-Vim port of the [evergarden](https://evergarden.moe) palette. Single
+file, no dependencies, Vim 8.0+ (no Neovim, by design).
+
+### Install
+```bash
+cd evergarden && ./install.sh     # → ~/.vim/colors (and ~/vimfiles/colors)
+./install.sh status
+./install.sh uninstall
+```
+
+### Usage
+```vim
+set termguicolors
+let g:evergarden_keyword = 'skye'   " keyword hue; any palette name
+colorscheme evergarden
+```
+
+### Preview without installing
+```bash
+cd evergarden && ./test/run.sh    # hitest + C/Vim/Markdown samples + a live diff
+./test/run.sh 256                 # 256-colour cterm fallback
+```
+
+In the preview, `:Kw <hue>` retints keywords live.
+
+---
+
 ## Building All Tools
 
 Use the wrapper script to build all tools at once:
