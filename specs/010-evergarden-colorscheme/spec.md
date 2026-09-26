@@ -177,10 +177,16 @@ so `:terminal` buffers match.
 ### Installation
 
 `install.sh` copies (not symlinks — Windows-friendly) the colorscheme into
-every detected Vim runtime directory:
+`$HOME/.vim/colors/` on every platform, creating it when absent. This is the
+only target: never create or modify `~/vimfiles`, even if it already exists.
+All subcommands use the same target; uninstall removes only the colorscheme
+file and leaves directories and unrelated files intact.
 
-- `$HOME/vimfiles/colors/` (Windows Vim)
-- `$HOME/.vim/colors/` (Unix Vim)
+Vim's `runtimepath` must contain `~/.vim`, not its `colors` subdirectory.
+Native Windows Vim does not include this root by default, so the installer
+prints `set runtimepath^=~/.vim` before `colorscheme evergarden` in its vimrc
+instructions. It does not edit the user's vimrc. A different Vim home requires
+manual installation into a runtime root visible to that Vim.
 
 Subcommands: `install` (default), `uninstall`, `status`.
 
@@ -194,15 +200,20 @@ nothing has to be installed.
 
 | Case | Expectation |
 |---|---|
-| `install.sh install` | File present in each detected colors dir |
-| `install.sh status` | Reports installed/missing per target |
+| `install.sh install`, fresh home | File present only in `~/.vim/colors`; no `~/vimfiles` created |
+| `install.sh install`, existing `~/.vim` | File present in `~/.vim/colors` |
+| Existing `~/vimfiles/colors/evergarden.vim` | Install, status, and uninstall ignore it and leave it untouched |
+| Home path containing spaces | Install, status, and uninstall all succeed |
+| Native Vim, installed into a temporary home | With documented `set runtimepath^=~/.vim`, discovery, colorscheme completion, and `:colorscheme evergarden` work |
+| Native Vim after uninstall | File no longer discoverable; completion no longer lists it |
+| `install.sh status` | Reports installed/missing only for `~/.vim/colors/evergarden.vim`, without creating directories |
 | `install.sh uninstall` | Files removed; empty `colors/` dirs left in place |
 | Re-run `install.sh install` | Idempotent overwrite, exit 0 |
 | `test/run.sh` | Five tabs, no errors, all groups legible |
 | `test/run.sh 256` | Same, via cterm fallback |
 | `:Kw <name>` in the preview | Keyword hue changes, no errors |
 | `let g:evergarden_keyword = 'bogus'` | Silently falls back to skye |
-| `vim -Nu NONE -c 'set tgc' -c 'colo evergarden' -c q` | Exits 0, no errors |
+| `vim -Nu NONE -c 'set runtimepath^=~/.vim' -c 'set tgc' -c 'colo evergarden' -c q` | Exits 0, no errors |
 | `:colorscheme evergarden` twice | No `E` errors (re-sourcing is safe) |
 | `:source $VIMRUNTIME/colors/tools/check_colors.vim` | Same report as the bundled schemes |
 | Plain Vim 8, `:colorscheme evergarden` | No `W18` warnings |

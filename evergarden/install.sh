@@ -3,8 +3,8 @@
 #
 #   ./install.sh [install|uninstall|status]
 #
-# Copies colors/evergarden.vim into every Vim runtime directory found on this
-# machine (~/vimfiles and ~/.vim). Copies (not symlinks) so it works on Windows.
+# Copies colors/evergarden.vim into ~/.vim/colors on every platform.
+# Uses copies (not symlinks) for Windows compatibility.
 # POSIX sh only: runs under dash, ash/busybox, ksh, bash.
 
 set -eu
@@ -17,21 +17,7 @@ die() { printf 'error: %s\n' "$1" >&2; exit 1; }
 
 # Newline-separated list of target directories.
 targets() {
-  found=''
-  if [ -d "$HOME/vimfiles" ]; then
-    found="$found$HOME/vimfiles/colors
-"
-  fi
-  if [ -d "$HOME/.vim" ]; then
-    found="$found$HOME/.vim/colors
-"
-  fi
-  # Nothing detected: fall back to the conventional Vim location.
-  if [ -z "$found" ]; then
-    found="$HOME/.vim/colors
-"
-  fi
-  printf '%s' "$found"
+  printf '%s/.vim/colors\n' "$HOME"
 }
 
 cmd_install() {
@@ -42,7 +28,7 @@ cmd_install() {
     cp -f "$SRC" "$dir/$NAME"
     printf 'installed  %s\n' "$dir/$NAME"
   done
-  printf '\nAdd to your vimrc:\n  colorscheme evergarden\n'
+  printf '\nAdd to your vimrc:\n  set runtimepath^=~/.vim\n  colorscheme evergarden\n'
 }
 
 cmd_uninstall() {

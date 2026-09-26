@@ -13,19 +13,50 @@ blue #b2caed   purple #d2bdf3  pink #f3c0e5     cherry #fae6ef
 ## Install
 
 ```bash
-cd evergarden && ./install.sh          # copy into ~/.vim/colors (and ~/vimfiles/colors)
+cd evergarden && ./install.sh          # copy into ~/.vim/colors on every platform
 ./install.sh status                    # where is it?
 ./install.sh uninstall                 # remove
 ```
 
+The installer uses only `~/.vim/colors/`, creating it if necessary, on Windows
+and Unix alike. It never creates or modifies `~/vimfiles`. Uninstall removes
+only `~/.vim/colors/evergarden.vim`, leaving directories and other files intact.
+
 Or manually: drop `colors/evergarden.vim` into `~/.vim/colors/`.
+
+### Not listed by `:colorscheme <Tab>`?
+
+Check inside the Vim you use:
+
+```vim
+:echo expand('~')
+:set runtimepath?
+:echo globpath(&runtimepath, 'colors/evergarden.vim')
+```
+
+`runtimepath` must include `~/.vim`, the **parent** of `colors`, not the
+`colors` directory itself. Native Windows Vim does not include `~/.vim` by
+default.
+
+Plugins under `~/.vim/bundle` can still work: managers such as Vundle add each
+plugin's runtime root separately, without adding `~/.vim` itself. To keep
+using `~/.vim/colors` on Windows, add this before the colorscheme in your vimrc:
+
+```vim
+set runtimepath^=~/.vim
+colorscheme evergarden
+```
+
+If Vim uses a different home from the shell or a custom `runtimepath`, install
+manually into a runtime root shown by `:set runtimepath?`.
 
 ## Use
 
-In `~/.vimrc`:
+In `~/.vimrc` (or `~/_vimrc` on Windows):
 
 ```vim
-set termguicolors     " strongly recommended
+set runtimepath^=~/.vim   " needed when ~/.vim is not already on runtimepath
+set termguicolors         " strongly recommended
 colorscheme evergarden
 ```
 
@@ -96,6 +127,17 @@ The two Vim built-ins are worth knowing on their own:
 Every group in `:help highlight-groups`, plus diffs, spell, netrw, popup
 windows, the toolbar, `termdebug` markers, markdown/help filetypes, and
 `g:terminal_ansi_colors` for `:terminal`.
+
+## Installer regression tests
+
+```sh
+sh evergarden/test/install.sh
+```
+
+Tests use temporary homes to check install/status/uninstall into `~/.vim/colors`
+and verify that `~/vimfiles` is untouched. If `vim` is available, they also
+verify discovery, completion, loading, and removal with the documented
+`set runtimepath^=~/.vim` configuration.
 
 ## Spec
 
