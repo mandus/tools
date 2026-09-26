@@ -1,10 +1,10 @@
 " Name:         evergarden
-" Description:  A forest-toned dark colorscheme inspired by The Minish Cap
-" Author:       mandus tools
-" Maintainer:   mandus tools
+" Description:  A forest-toned dark colorscheme inspired by The Minish Cap. Evergarden.moe used as basis
+" Author:       AI / mandus
+" Maintainer:   mandus 
 " URL:          https://evergarden.moe
 " License:      Vim License (see `:help license`)
-" Last Change:  2026 Feb 14
+" Last Change:  2026.09.26
 "
 " Spec: specs/010-evergarden-colorscheme/spec.md
 "
