@@ -1,0 +1,8 @@
+context line one
+context line two
+this line is different on the right
+context line three
+shared tail A
+shared tail B
+this line only exists on the right
+context line four
