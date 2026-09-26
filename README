@@ -185,13 +185,14 @@ file, no dependencies, Vim 8.0+ (no Neovim, by design).
 
 ### Install
 ```bash
-cd evergarden && ./install.sh     # → ~/.vim/colors (and ~/vimfiles/colors)
+cd evergarden && ./install.sh     # → ~/.vim/colors on every platform
 ./install.sh status
 ./install.sh uninstall
 ```
 
 ### Usage
 ```vim
+set runtimepath^=~/.vim           " needed when ~/.vim is not already on runtimepath
 set termguicolors
 let g:evergarden_keyword = 'skye'   " keyword hue; any palette name
 colorscheme evergarden
