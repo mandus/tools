@@ -92,6 +92,12 @@ func editPassword(path string, noCommit bool) error {
 		return fmt.Errorf("pass: %s: Is a directory", path)
 	}
 
+	// Resolve encryption recipients (.gpg-id, PASS_GPG_ID, sole key)
+	encOpts, err := storeEncryptOptions(storeDir)
+	if err != nil {
+		return err
+	}
+
 	// Decrypt the file
 	password, err := gpg.DecryptFile(fullPath)
 	if err != nil {
@@ -172,7 +178,7 @@ func editPassword(path string, noCommit bool) error {
 	}
 
 	// Encrypt the modified content back to the original file
-	if err := gpg.EncryptFile(tempFile2.Name(), fullPath); err != nil {
+	if err := gpg.EncryptFileWithOptions(tempFile2.Name(), fullPath, encOpts); err != nil {
 		return fmt.Errorf("pass: GPG encryption failed: %v", err)
 	}
 

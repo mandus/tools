@@ -479,7 +479,7 @@ func listPasswords(subpath string) error {
 |----------|-------------|---------|
 | `EDITOR` | Editor to use for editing passwords | `notepad` (Windows), `vi` (Unix) |
 | `PASSWORD_STORE_DIR` | Password store location | `~/.password-store` |
-| `PASS_GPG_ID` | GPG recipient key ID | Default key |
+| `PASS_GPG_ID` | GPG recipient key ID; used when `<store>/.gpg-id` is absent (see `011-gpg-id-recipient`) | Only secret key, if exactly one |
 | `PASS_NO_COMMIT` | Skip git commits globally | false |
 
 ---

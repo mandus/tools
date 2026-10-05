@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -24,6 +25,7 @@ type GPGOptions struct {
 	BatchMode      bool
 	Passphrase     string
 	Recipient      string
+	Recipients     []string // Resolved recipients (e.g. from the store's .gpg-id); takes precedence over Recipient
 	PinentryMode   string // "loopback" to bypass pinentry
 	AllowPrompt    bool   // Allow interactive passphrase prompt (default: true)
 	RetryOnCancel  bool   // Retry with loopback on operation cancelled (default: true)
@@ -50,8 +52,107 @@ func BatchGPGOptions(passphrase string) GPGOptions {
 	}
 }
 
+// GPGIDFile is the name of the file in the store root listing the recipients.
+const GPGIDFile = ".gpg-id"
+
+// ReadGPGID reads the recipients from <storeDir>/.gpg-id (store root only).
+// One recipient per line; blank lines and lines starting with '#' are ignored
+// and whitespace is trimmed. found is false (with a nil error) if the file does
+// not exist. An existing file without any recipient is an error.
+func ReadGPGID(storeDir string) (recipients []string, found bool, err error) {
+	data, err := os.ReadFile(filepath.Join(storeDir, GPGIDFile))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, false, nil
+		}
+		return nil, true, err
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		recipients = append(recipients, line)
+	}
+	if len(recipients) == 0 {
+		return nil, true, fmt.Errorf("%s contains no recipients", GPGIDFile)
+	}
+	return recipients, true, nil
+}
+
+// ResolveRecipients determines whom secrets in storeDir are encrypted to:
+//  1. the recipients in <storeDir>/.gpg-id,
+//  2. otherwise the PASS_GPG_ID environment variable,
+//  3. otherwise the only usable secret key in the keyring.
+//
+// A .gpg-id that exists but is unusable is an error (no fall-through, as that
+// would encrypt to a key the store does not declare). Without .gpg-id and
+// PASS_GPG_ID, zero or several secret keys are an error since the right key
+// cannot be known.
+func ResolveRecipients(storeDir string) ([]string, error) {
+	recipients, found, err := ReadGPGID(storeDir)
+	if err != nil {
+		return nil, fmt.Errorf("invalid %s: %v", GPGIDFile, err)
+	}
+	if found {
+		return recipients, nil
+	}
+	recipients, err = fallbackRecipients()
+	if err != nil {
+		return nil, fmt.Errorf("%v; create %s or set PASS_GPG_ID",
+			err, filepath.Join(storeDir, GPGIDFile))
+	}
+	return recipients, nil
+}
+
+// fallbackRecipients implements steps 2 and 3 of ResolveRecipients.
+func fallbackRecipients() ([]string, error) {
+	if id := strings.TrimSpace(os.Getenv("PASS_GPG_ID")); id != "" {
+		return []string{id}, nil
+	}
+	keys, err := usableSecretKeys()
+	if err != nil {
+		return nil, err
+	}
+	switch len(keys) {
+	case 0:
+		return nil, fmt.Errorf("no GPG secret key found")
+	case 1:
+		return keys, nil
+	}
+	return nil, fmt.Errorf("multiple GPG secret keys found (%s); cannot tell which to use",
+		strings.Join(keys, ", "))
+}
+
+// usableSecretKeys returns the key IDs of secret keys that are not revoked,
+// expired or disabled.
+func usableSecretKeys() ([]string, error) {
+	cmd := exec.Command("gpg", "--batch", "--list-secret-keys", "--with-colons")
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("failed to list GPG secret keys: %v: %s", err, strings.TrimSpace(stderr.String()))
+	}
+	var keys []string
+	for _, line := range strings.Split(stdout.String(), "\n") {
+		if !strings.HasPrefix(line, "sec:") {
+			continue
+		}
+		parts := strings.Split(line, ":")
+		if len(parts) < 5 {
+			continue
+		}
+		if parts[1] == "r" || parts[1] == "e" || parts[1] == "d" {
+			continue
+		}
+		keys = append(keys, parts[4])
+	}
+	return keys, nil
+}
+
 // EncryptFile encrypts a file using GPG and saves it to the destination path.
-// Uses the default GPG key or the one specified in PASS_GPG_ID environment variable.
+// Recipients: PASS_GPG_ID, otherwise the sole usable secret key (see EncryptFileWithOptions).
 func EncryptFile(srcPath, destPath string) error {
 	return EncryptFileWithOptions(srcPath, destPath, DefaultGPGOptions())
 }
@@ -59,10 +160,17 @@ func EncryptFile(srcPath, destPath string) error {
 // EncryptFileWithOptions encrypts a file using GPG with custom options.
 // This allows for batch mode, specific recipients, and passphrase handling.
 func EncryptFileWithOptions(srcPath, destPath string, opts GPGOptions) error {
-	// Get recipient from options, environment, or use default
-	recipient := opts.Recipient
-	if recipient == "" {
-		recipient = os.Getenv("PASS_GPG_ID")
+	// Recipients: explicit list, then single recipient, then PASS_GPG_ID,
+	// then the sole usable secret key. Never an arbitrary default key.
+	recipients := opts.Recipients
+	if len(recipients) == 0 && opts.Recipient != "" {
+		recipients = []string{opts.Recipient}
+	}
+	if len(recipients) == 0 {
+		var err error
+		if recipients, err = fallbackRecipients(); err != nil {
+			return err
+		}
 	}
 	
 	args := []string{
@@ -81,11 +189,8 @@ func EncryptFileWithOptions(srcPath, destPath string, opts GPGOptions) error {
 		args = append(args, "--pinentry-mode", opts.PinentryMode)
 	}
 	
-	if recipient != "" {
-		args = append(args, "--recipient", recipient)
-	} else {
-		// Use default key (no explicit recipient)
-		args = append(args, "--default-recipient-self")
+	for _, r := range recipients {
+		args = append(args, "--recipient", r)
 	}
 	
 	// Add output file
