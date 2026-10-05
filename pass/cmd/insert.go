@@ -69,6 +69,12 @@ func insertPassword(path string) error {
 		return fmt.Errorf("pass: %s: Already exists", path)
 	}
 	
+	// Resolve encryption recipients (.gpg-id, PASS_GPG_ID, sole key) before prompting
+	encOpts, err := storeEncryptOptions(storeDir)
+	if err != nil {
+		return err
+	}
+
 	// Get password from user
 	password, err := promptForPassword(path)
 	if err != nil {
@@ -102,7 +108,7 @@ func insertPassword(path string) error {
 	}
 	
 	// Encrypt the temp file
-	if err := gpg.EncryptFile(tempFile.Name(), fullPath); err != nil {
+	if err := gpg.EncryptFileWithOptions(tempFile.Name(), fullPath, encOpts); err != nil {
 		return fmt.Errorf("pass: GPG encryption failed: %v", err)
 	}
 	
@@ -182,4 +188,17 @@ func promptForPassword(path string) (string, error) {
 	}
 	
 	return password1, nil
+}
+
+// storeEncryptOptions returns the GPG options for encrypting to the store's
+// recipients: <store>/.gpg-id, else PASS_GPG_ID, else the sole secret key.
+// Errors if the recipient cannot be determined unambiguously.
+func storeEncryptOptions(storeDir string) (gpg.GPGOptions, error) {
+	opts := gpg.DefaultGPGOptions()
+	recipients, err := gpg.ResolveRecipients(storeDir)
+	if err != nil {
+		return opts, fmt.Errorf("pass: %v", err)
+	}
+	opts.Recipients = recipients
+	return opts, nil
 }

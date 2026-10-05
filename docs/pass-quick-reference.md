@@ -210,7 +210,7 @@ MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC7...
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PASSWORD_STORE_DIR` | `%USERPROFILE%\.password-store` | Password store location |
-| `PASS_GPG_ID` | Default GPG key | GPG recipient key ID |
+| `PASS_GPG_ID` | Only secret key | GPG recipient key ID; used when `<store>/.gpg-id` is absent |
 | `PASS_CLIPBOARD_TIMEOUT` | 45 | Clipboard clear timeout (seconds) |
 | `PASS_CLIPBOARD_CLEAR` | true | Enable clipboard auto-clear |
 | `PASS_GIT_NAME` | Git config | Git user.name override |
@@ -318,7 +318,7 @@ $ git push -u origin main
 **"No secret key" or "gpg: decryption failed"**
 - Ensure you have a GPG key pair: `gpg --list-secret-keys`
 - Ensure the password was encrypted to your key
-- Check `PASS_GPG_ID` if you use multiple keys
+- With several secret keys, list the store's key in `<store>/.gpg-id` (or set `PASS_GPG_ID`); `insert`/`edit` refuse to guess
 
 **"No such file or directory"**
 - Check the path is correct (case-sensitive)
